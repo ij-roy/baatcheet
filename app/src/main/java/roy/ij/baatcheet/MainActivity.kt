@@ -24,7 +24,7 @@ import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
 import roy.ij.baatcheet.googleSignIn.GoogleAuthUiClient
 import roy.ij.baatcheet.screens.ChatsScreenUI
-import roy.ij.baatcheet.screens.PromptArchitectScreen
+import roy.ij.baatcheet.screens.PromptWriterScreen
 import roy.ij.baatcheet.screens.SignInScreenUI
 import roy.ij.baatcheet.ui.theme.BaatCheetTheme
 
@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
                             }
                             // Add the new destination for our feature
                             composable<PromptWriterScreen> {
-                                PromptArchitectScreen()
+                                PromptWriterScreen()
                             }
                         }
                     }
