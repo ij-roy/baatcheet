@@ -1,6 +1,5 @@
 package roy.ij.baatcheet
 
-import android.content.IntentSender
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,14 +12,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,11 +24,11 @@ import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
 import roy.ij.baatcheet.googleSignIn.GoogleAuthUiClient
 import roy.ij.baatcheet.screens.ChatsScreenUI
+import roy.ij.baatcheet.screens.PromptArchitectScreen
 import roy.ij.baatcheet.screens.SignInScreenUI
 import roy.ij.baatcheet.ui.theme.BaatCheetTheme
 
 class MainActivity : ComponentActivity() {
-    // Video 05 done start from video 6 15 minutesll
     private val viewModel: ChatViewModel by viewModels()
 
     private val googleAuthUiClient by lazy {
@@ -50,7 +45,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             BaatCheetTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-
                     Box(
                         modifier = Modifier
                             .padding(innerPadding)
@@ -108,7 +102,13 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable<ChatsScreen> {
-                                ChatsScreenUI()
+//                                ChatsScreenUI()
+                                ChatsScreenUI(navController = navController)
+
+                            }
+                            // Add the new destination for our feature
+                            composable<PromptWriterScreen> {
+                                PromptArchitectScreen()
                             }
                         }
                     }

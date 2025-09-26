@@ -66,4 +66,19 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.material.icons.extended)
 
+    // Retrofit for networking
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+
+    // Coroutines for asynchronous operations
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Markwon for displaying Markdown
+    implementation(libs.core)
+    implementation(libs.ext.strikethrough)
+    implementation(libs.ext.tables)
+    implementation(libs.html)
 }
