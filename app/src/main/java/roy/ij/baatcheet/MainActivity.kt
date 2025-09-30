@@ -27,6 +27,13 @@ import roy.ij.baatcheet.screens.ChatsScreenUI
 import roy.ij.baatcheet.screens.PromptWriterScreen
 import roy.ij.baatcheet.screens.SignInScreenUI
 import roy.ij.baatcheet.ui.theme.BaatCheetTheme
+import androidx.navigation.toRoute
+import roy.ij.baatcheet.navigation.ChatsScreen
+import roy.ij.baatcheet.navigation.ConversationScreen
+import roy.ij.baatcheet.navigation.PromptWriterScreen
+import roy.ij.baatcheet.navigation.SignInScreen
+import roy.ij.baatcheet.navigation.StartScreen
+import roy.ij.baatcheet.screens.ConversationScreen
 
 class MainActivity : ComponentActivity() {
     private val viewModel: ChatViewModel by viewModels()
@@ -85,6 +92,8 @@ class MainActivity : ComponentActivity() {
                                         viewModel.addUserToFirestore(userData)
                                         viewModel.getUserData(userData.userId)
                                         navController.navigate(ChatsScreen)
+
+                                        viewModel.connectToSocket()
                                     }
 
                                 }
@@ -102,13 +111,19 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable<ChatsScreen> {
-//                                ChatsScreenUI()
-                                ChatsScreenUI(navController = navController)
+                                ChatsScreenUI(navController = navController,chatViewModel = viewModel)
 
                             }
                             // Add the new destination for our feature
                             composable<PromptWriterScreen> {
                                 PromptWriterScreen()
+                            }
+
+                            composable<ConversationScreen> { backStackEntry ->
+                                // Extract the route object which contains the chatId
+                                val conversationRoute = backStackEntry.toRoute<ConversationScreen>()
+                                // Pass the chatId to your screen
+                                ConversationScreen(chatId = conversationRoute.chatId,chatViewModel = viewModel)
                             }
                         }
                     }

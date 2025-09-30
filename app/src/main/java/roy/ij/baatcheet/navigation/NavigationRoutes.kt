@@ -1,4 +1,4 @@
-package roy.ij.baatcheet
+package roy.ij.baatcheet.navigation
 
 import kotlinx.serialization.Serializable
 
@@ -13,3 +13,6 @@ object ChatsScreen
 
 @Serializable
 object PromptWriterScreen
+
+@Serializable
+data class ConversationScreen(val chatId: String)

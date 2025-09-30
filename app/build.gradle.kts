@@ -13,9 +13,9 @@ android {
     defaultConfig {
         applicationId = "roy.ij.baatcheet"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -27,6 +27,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Define the production server URL for release builds
+            buildConfigField("String", "BASE_URL", "\"https://baatcheet-backend-jrndg.ondigitalocean.app/\"")
+        }
+        debug {
+            // Define the local server URL for debug builds
+            // 10.0.2.2 is the special IP address for your computer's localhost from the Android emulator
+            buildConfigField("String", "BASE_URL", "\"https://ij.dophera.xyz/\"")
         }
     }
     compileOptions {
@@ -38,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -81,4 +89,7 @@ dependencies {
     implementation(libs.ext.strikethrough)
     implementation(libs.ext.tables)
     implementation(libs.html)
+
+    //socket.io
+    implementation(libs.socket.io.client)
 }

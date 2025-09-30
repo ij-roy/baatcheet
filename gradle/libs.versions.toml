@@ -20,6 +20,7 @@ navigationCompose = "2.8.5"
 playServicesAuth = "21.3.0"
 firebaseFirestore = "25.1.2"
 retrofit = "2.9.0"
+socketIoClient = "2.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,6 +52,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+socket-io-client = { module = "io.socket:socket.io-client", version.ref = "socketIoClient" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
