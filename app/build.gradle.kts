@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
     kotlin("plugin.serialization") version "2.1.0"
+    alias(libs.plugins.ksp)
+    id("com.google.dagger.hilt.android") version "2.51"
+    kotlin("kapt")
 }
 
 android {
@@ -92,4 +95,19 @@ dependencies {
 
     //socket.io
     implementation(libs.socket.io.client)
+
+    // Room for local database
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // SQLCipher for database encryption
+    implementation(libs.android.database.sqlcipher)
+    implementation(libs.androidx.sqlite.ktx)
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+
+    // OkHttp logging (nice for debugging network calls)
+    implementation(libs.logging.interceptor)
 }

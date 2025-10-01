@@ -66,7 +66,7 @@ class GoogleAuthUiClient(
             if (user != null && firebaseIdToken != null) {
                 try {
                     // Send the CORRECT token to your backend
-                    RetrofitClient.instance.syncUser(SyncRequest(idToken = firebaseIdToken))
+//                    RetrofitClient.instance.syncUser(SyncRequest(idToken = firebaseIdToken))
                     Log.d("UserSync", "User successfully synced with backend.")
                 } catch (e: Exception) {
                     Log.e("UserSync", "Failed to sync user with backend.", e)

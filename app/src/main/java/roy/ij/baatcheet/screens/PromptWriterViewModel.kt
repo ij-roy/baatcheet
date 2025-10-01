@@ -26,8 +26,8 @@ class PromptWriterViewModel : ViewModel() {
                     taskType = "code_generation"  // This can be dynamic later
                 )
                 // Use the new, central RetrofitClient
-                val response = RetrofitClient.instance.getRewrittenPrompt(request)
-                _uiState.value = UiState.Success(response)
+//                val response = RetrofitClient.instance.getRewrittenPrompt(request)
+//                _uiState.value = UiState.Success(response)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "An unknown error occurred")
             }

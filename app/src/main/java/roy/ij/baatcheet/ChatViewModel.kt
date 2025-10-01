@@ -1,7 +1,9 @@
 package roy.ij.baatcheet
 
+import android.app.Application
 import android.content.ContentValues
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.ListenerRegistration
@@ -11,14 +13,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
+import roy.ij.baatcheet.data.local.AppDatabase
+import roy.ij.baatcheet.data.local.ChatEntity
 import roy.ij.baatcheet.data.network.RetrofitClient
 import roy.ij.baatcheet.data.network.SocketManager
 
-class ChatViewModel : ViewModel() {
+class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val _state = MutableStateFlow(AppState())
     val state = _state.asStateFlow()
     private val userCollection = Firebase.firestore.collection(USERS_COLLECTION)
@@ -29,6 +35,12 @@ class ChatViewModel : ViewModel() {
 
     private val _searchEmail = MutableStateFlow("")
     val searchEmail: StateFlow<String> = _searchEmail.asStateFlow()
+
+    private val db = AppDatabase.getInstance(application)
+
+    // --- NEW: State for the chat list ---
+    val chats: StateFlow<List<ChatEntity>> = db.chatDao().getAllChats()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun onShowNewChatDialog() {
         _showNewChatDialog.value = true
@@ -48,12 +60,12 @@ class ChatViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val user = RetrofitClient.instance.findUserByEmail(_searchEmail.value)
+//                val user = RetrofitClient.instance.findUserByEmail(_searchEmail.value)
                 // TODO: Save the new chat to local DB
                 onDismissNewChatDialog()
-                Log.d("Navigation_Debug", "User found! Navigating with userId1: ${user.firebaseUid}")
-                onChatCreated(user.firebaseUid) // Pass the user's ID to navigate
-                Log.d("Navigation_Debug", "User found! Navigating with userId2: ${user.firebaseUid}")
+//                Log.d("Navigation_Debug", "User found! Navigating with userId1: ${user.firebaseUid}")
+//                onChatCreated(user.firebaseUid) // Pass the user's ID to navigate
+//                Log.d("Navigation_Debug", "User found! Navigating with userId2: ${user.firebaseUid}")
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Error finding user", e)
                 Log.e("Navigation_Debug", "Error finding user", e)

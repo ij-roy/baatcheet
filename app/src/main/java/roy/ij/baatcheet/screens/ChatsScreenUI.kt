@@ -31,7 +31,7 @@ import roy.ij.baatcheet.ChatViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatsScreenUI(navController: NavController,chatViewModel: ChatViewModel = viewModel()) {
-    val chats = listOf("Chat with John Doe", "Chat with Jane Smith", "Group Chat")
+    val chats by chatViewModel.chats.collectAsState()
     val showDialog by chatViewModel.showNewChatDialog.collectAsState()
     val searchEmail by chatViewModel.searchEmail.collectAsState()
 
@@ -86,8 +86,7 @@ fun ChatsScreenUI(navController: NavController,chatViewModel: ChatViewModel = vi
                         ChatItem(
                             title = chatTitle.toString(),
                             onClick = {
-                                // Use the imported route DATA CLASS
-                                navController.navigate(ConversationScreen(chatId = chatTitle))
+                                navController.navigate(ConversationScreen(chatId = chatTitle.chatId))
                             }
                         )
                     }

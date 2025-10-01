@@ -1,16 +1,24 @@
 package roy.ij.baatcheet.data.network
 
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import roy.ij.baatcheet.BuildConfig
 
 object RetrofitClient {
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(BuildConfig.BASE_URL)
-        .addConverterFactory(GsonConverterFactory.create())
+    private const val BASE_URL = "https://ij.dophera.xyz/api/"
+    // use 10.0.2.2 for emulator; replace with your LAN IP for device
+
+    private val client = OkHttpClient.Builder()
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        })
         .build()
 
-    val instance: ApiService by lazy {
-        retrofit.create(ApiService::class.java)
-    }
+    val api: ApiService = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(ApiService::class.java)
 }
