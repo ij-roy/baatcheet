@@ -25,7 +25,8 @@ class AuthViewModel(
         viewModelScope.launch {
             try {
                 val resp = repo.login(username, password)
-                _state.value = AuthState(token = resp.token)
+                _state.value = AuthState(isLoading = false)
+                afterAuthSuccess(resp.token)
                 // TODO save token securely (EncryptedSharedPreferences / Keystore)
             } catch (e: Exception) {
                 _state.value = AuthState(error = e.message)
@@ -38,9 +39,30 @@ class AuthViewModel(
         viewModelScope.launch {
             try {
                 val resp = repo.register(username, password)
-                _state.value = AuthState(token = resp.token)
+                _state.value = AuthState(isLoading = false)
+                afterAuthSuccess(resp.token)
             } catch (e: Exception) {
                 _state.value = AuthState(error = e.message)
+            }
+        }
+    }
+
+    private fun afterAuthSuccess(token: String) {
+        _state.value = _state.value.copy(token = token)
+
+        viewModelScope.launch {
+            try {
+                // Ensure keypair exists
+                roy.ij.baatcheet.data.crypto.KeyManager.ensureKeyPair()
+
+                // Export public key
+                val pubB64 = roy.ij.baatcheet.data.crypto.KeyManager.exportPublicKeyBase64()
+
+                // Upload to backend
+                repo.uploadPublicKey(token, pubB64)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _state.value = _state.value.copy(error = "Key upload failed (will retry)")
             }
         }
     }

@@ -12,6 +12,8 @@ import roy.ij.baatcheet.data.model.User
 data class AuthRequest(val username: String, val password: String)
 data class AuthResponse(val token: String, val user: UserDto?)
 data class UserDto(val id: String, val username: String)
+data class PublicKeyRequest(val publicKey: String)
+data class OkResponse(val ok: Boolean)
 
 interface ApiService {
     @POST("/api/proxy/writer-prompt")
@@ -25,4 +27,12 @@ interface ApiService {
 
     @GET("users/me")
     suspend fun me(@Header("Authorization") bearer: String): Map<String, Any>
+
+    @POST("users/public-key")
+    suspend fun setPublicKey(
+        @Header("Authorization") bearer: String,
+        @Body req: PublicKeyRequest
+    ): OkResponse
+
+
 }
