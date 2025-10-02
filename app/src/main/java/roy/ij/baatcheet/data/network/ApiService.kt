@@ -14,6 +14,10 @@ data class AuthResponse(val token: String, val user: UserDto?)
 data class UserDto(val id: String, val username: String)
 data class PublicKeyRequest(val publicKey: String)
 data class OkResponse(val ok: Boolean)
+data class CreateRoomReq(val codePhrase: String?, val durationMinutes: Int?)
+data class CreateRoomResp(val roomId: String, val alias: String, val expiresAt: String?)
+data class JoinRoomReq(val roomId: String, val codePhrase: String?)
+data class ApproveReq(val roomId: String, val memberId: String)
 
 interface ApiService {
     @POST("/api/proxy/writer-prompt")
@@ -34,5 +38,18 @@ interface ApiService {
         @Body req: PublicKeyRequest
     ): OkResponse
 
+    @POST("rooms/create")
+    suspend fun createRoom(@Header("Authorization") bearer: String,
+                           @Body req: CreateRoomReq): CreateRoomResp
 
+    @POST("rooms/join")
+    suspend fun joinRoom(@Header("Authorization") bearer: String,
+                         @Body req: JoinRoomReq): Map<String, Any>
+
+    @POST("rooms/approve")
+    suspend fun approve(@Header("Authorization") bearer: String,
+                        @Body req: ApproveReq): Map<String, Any>
+
+    @GET("rooms/mine")
+    suspend fun listMyRooms(@Header("Authorization") bearer: String): Map<String, Any>
 }

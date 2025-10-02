@@ -27,6 +27,8 @@ class AuthViewModel(
                 val resp = repo.login(username, password)
                 _state.value = AuthState(isLoading = false)
                 afterAuthSuccess(resp.token)
+
+                roy.ij.baatcheet.data.AuthSession.token = resp.token
                 // TODO save token securely (EncryptedSharedPreferences / Keystore)
             } catch (e: Exception) {
                 _state.value = AuthState(error = e.message)
@@ -41,6 +43,8 @@ class AuthViewModel(
                 val resp = repo.register(username, password)
                 _state.value = AuthState(isLoading = false)
                 afterAuthSuccess(resp.token)
+
+                roy.ij.baatcheet.data.AuthSession.token = resp.token
             } catch (e: Exception) {
                 _state.value = AuthState(error = e.message)
             }

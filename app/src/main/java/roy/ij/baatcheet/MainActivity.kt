@@ -19,6 +19,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import roy.ij.baatcheet.features.chat.RoomScreen
+import roy.ij.baatcheet.features.chat.RoomViewModel
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import roy.ij.baatcheet.ui.theme.BaatCheetTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,7 +68,19 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(NavRoutes.ChatList.route) {
                             // Placeholder — replace with your real chat list screen
-                            ChatListScreen()
+                            ChatListScreen(
+                                onGoToRooms = {
+                                    navController.navigate(NavRoutes.Room.route)
+                                }
+                            )
+                        }
+                        composable(NavRoutes.Room.route) {
+                            // Provide token to RoomViewModel
+                            val roomVm: RoomViewModel = viewModel()
+                            LaunchedEffect(authState.token) {
+                                authState.token?.let { roomVm.setToken(it) }
+                            }
+                            RoomScreen(viewModel = roomVm)
                         }
                     }
                 }
@@ -63,11 +89,23 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Minimal placeholder screen so the app runs */
-@androidx.compose.runtime.Composable
-private fun ChatListScreen() {
-    Text("Welcome to ChatList 👋")
+@Composable
+fun ChatListScreen(onGoToRooms: () -> Unit) {
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Text("Welcome to ChatList 👋")
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onGoToRooms) {
+            Text("Go to Rooms")
+        }
+    }
 }
+
+
+//=/** Minimal placeholder screen so the app runs */
+//@androidx.compose.runtime.Composable
+//private fun ChatListScreen() {
+//    Text("Welcome to ChatList 👋")
+//}
 
 //class MainActivity : ComponentActivity() {
 //    private val viewModel: ChatViewModel by viewModels()
