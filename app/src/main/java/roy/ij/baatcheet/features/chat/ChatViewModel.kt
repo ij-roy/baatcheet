@@ -60,53 +60,33 @@ class ChatViewModel(
                 socket.onNewMessage { msg ->
                     // msg: { _id, roomId, alias, type, ciphertext, iv, encKey, createdAt }
                     try {
-                        println("inside try 1 📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
+//                        println("inside try 1 📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
+                        val senderId = msg.optString("senderId")
+                        val myId = state.value.myUserId
+                        if (senderId == myId) {
+                            // 👇 ignore messages I just sent myself
+                            return@onNewMessage
+                        }
+
                         val encKey = msg.getString("encKey")
                         val secret: SecretKey = CryptoHelper.unwrapAesKey(encKey)
                         val text = CryptoHelper.decryptAes(msg.getString("ciphertext"), msg.getString("iv"), secret)
                         val alias = msg.getString("alias")
                         val id = msg.optString("_id", null)
                         val at = Instant.parse(msg.getString("createdAt")).toEpochMilli()
-                        println("inside try 2 📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
                         appendMessage(ChatMessage(id, alias, text, mine = false, at = at))
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        println("inside catch 1📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
+//                        println("inside catch 1📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
                         appendMessage(ChatMessage(null, "System", "⚠️ failed to decrypt a message", false, System.currentTimeMillis()))
-                        println("inside catch 2📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
+//                        println("inside catch 2📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
                     }
                 }
 
                 // 5) (optional) load history once
-                val hist = repo.history(token, roomId)
-                val arr = (hist["messages"] as? List<*>) ?: emptyList<Any>()
-                arr.forEach { any ->
-                    val m = any as Map<*, *>
-                    val keyEnv = (m["keyEnvelope"] as? List<*>) ?: emptyList<Any>()
-                    val myEntry = keyEnv.firstOrNull { e ->
-                        val em = e as Map<*, *>
-                        (em["userId"] as String) == myUserId
-                    } as Map<*, *>?
-                    if (myEntry != null) {
-                        try {
-                            val secret = CryptoHelper.unwrapAesKey(myEntry["encKey"] as String)
-                            val text = CryptoHelper.decryptAes(
-                                m["ciphertext"] as String,
-                                (m["iv"] as String?) ?: "",
-                                secret
-                            )
-                            appendMessage(
-                                ChatMessage(
-                                    id = m["_id"]?.toString(),
-                                    alias = m["alias"] as String,
-                                    text = text,
-                                    mine = (m["senderId"] as String?) == myUserId,
-                                    at = Instant.parse(m["createdAt"] as String).toEpochMilli()
-                                )
-                            )
-                        } catch (_: Exception) { /* skip broken */ }
-                    }
-                }
+                // 5) Load and decrypt message history before listening to new messages
+                loadHistory(token, roomId, myUserId)
+
 
                 _state.update { it.copy(loading = false, myUserId = myUserId, members = members) }
             } catch (e: Exception) {
@@ -163,6 +143,38 @@ class ChatViewModel(
     private fun appendMessage(m: ChatMessage) {
         _state.update { it.copy(messages = it.messages + m) }
     }
+
+    private suspend fun loadHistory(token: String, roomId: String, myId: String) {
+        try {
+            val hist = repo.history(token, roomId)
+            val arr = (hist["messages"] as? List<*>) ?: return
+            val msgs = arr.mapNotNull { any ->
+                try {
+                    val m = any as Map<*, *>
+                    val envs = m["keyEnvelope"] as? List<*> ?: return@mapNotNull null
+                    val myEnv = envs.firstOrNull { (it as Map<*, *>)["userId"] == myId } as? Map<*, *> ?: return@mapNotNull null
+                    val secret = CryptoHelper.unwrapAesKey(myEnv["encKey"] as String)
+                    val text = CryptoHelper.decryptAes(
+                        m["ciphertext"] as String,
+                        (m["iv"] as? String) ?: "",
+                        secret
+                    )
+                    ChatMessage(
+                        id = m["_id"]?.toString(),
+                        alias = m["alias"] as String,
+                        text = text,
+                        mine = (m["senderId"] as? String) == myId,
+                        at = Instant.parse(m["createdAt"] as String).toEpochMilli()
+                    )
+                } catch (_: Exception) { null }
+            }
+            _state.update { it.copy(messages = msgs) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            appendMessage(ChatMessage(null, "System", "⚠️ failed to load history", false, System.currentTimeMillis()))
+        }
+    }
+
 
     override fun onCleared() {
         super.onCleared()
