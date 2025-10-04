@@ -3,35 +3,28 @@ package roy.ij.baatcheet
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.navArgument
 import roy.ij.baatcheet.features.auth.AuthScreen
 import roy.ij.baatcheet.features.auth.AuthViewModel
-import roy.ij.baatcheet.navigation.NavRoutes
-import roy.ij.baatcheet.ui.theme.BaatCheetTheme
-import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Modifier
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
+import roy.ij.baatcheet.features.chat.ChatListScreen
+import roy.ij.baatcheet.features.chat.ChatViewModel
+import roy.ij.baatcheet.features.chat.ConversationScreen
 import roy.ij.baatcheet.features.chat.RoomScreen
 import roy.ij.baatcheet.features.chat.RoomViewModel
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import roy.ij.baatcheet.navigation.NavRoutes
 import roy.ij.baatcheet.ui.theme.BaatCheetTheme
 
 class MainActivity : ComponentActivity() {
@@ -67,12 +60,8 @@ class MainActivity : ComponentActivity() {
                             AuthScreen(viewModel = authViewModel)
                         }
                         composable(NavRoutes.ChatList.route) {
-                            // Placeholder — replace with your real chat list screen
-                            ChatListScreen(
-                                onGoToRooms = {
-                                    navController.navigate(NavRoutes.Room.route)
-                                }
-                            )
+                            val token = authState.token ?: return@composable
+                            ChatListScreen(navController = navController, token = token)
                         }
                         composable(NavRoutes.Room.route) {
                             // Provide token to RoomViewModel
@@ -80,8 +69,22 @@ class MainActivity : ComponentActivity() {
                             LaunchedEffect(authState.token) {
                                 authState.token?.let { roomVm.setToken(it) }
                             }
-                            RoomScreen(viewModel = roomVm)
+                            RoomScreen(navController = navController, viewModel = roomVm)
                         }
+                        composable(
+                            NavRoutes.Conversation.route,
+                            arguments = listOf(navArgument("roomId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val roomId = backStackEntry.arguments?.getString("roomId") ?: return@composable
+
+                            // build ChatViewModel with token + roomId
+                            val token = authState.token ?: return@composable
+                            val chatVm = remember(roomId, token) {
+                                ChatViewModel(token = token, roomId = roomId)
+                            }
+                            ConversationScreen(viewModel = chatVm)
+                        }
+
                     }
                 }
             }
@@ -89,119 +92,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun ChatListScreen(onGoToRooms: () -> Unit) {
-    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text("Welcome to ChatList 👋")
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onGoToRooms) {
-            Text("Go to Rooms")
-        }
-    }
-}
-
-
-//=/** Minimal placeholder screen so the app runs */
-//@androidx.compose.runtime.Composable
-//private fun ChatListScreen() {
-//    Text("Welcome to ChatList 👋")
-//}
-
-//class MainActivity : ComponentActivity() {
-//    private val viewModel: ChatViewModel by viewModels()
-//
-//    private val googleAuthUiClient by lazy {
-//        GoogleAuthUiClient(
-//            context = applicationContext,
-//            viewModel = viewModel,
-//            oneTapClient = Identity.getSignInClient(applicationContext)
-//        )
-//    }
-//
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
-//        setContent {
-//            BaatCheetTheme {
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-//                    Box(
-//                        modifier = Modifier
-//                            .padding(innerPadding)
-//                            .fillMaxSize()
-//                    ) {
-//                        val state by viewModel.state.collectAsState()
-//                        val navController = rememberNavController()
-//                        NavHost(navController = navController, startDestination = StartScreen){
-//                            composable<StartScreen> {
-//
-//                                LaunchedEffect(key1 = Unit){
-//                                    val userData = googleAuthUiClient.getSignedInUser()
-//                                    if (userData != null){
-//                                        navController.navigate(ChatsScreen)
-//                                    }else{
-//                                        navController.navigate(SignInScreen)
-//                                    }
-//                                }
-//                            }
-//
-//                            composable<SignInScreen> {
-//                                val launcher =
-//                                    rememberLauncherForActivityResult(contract = ActivityResultContracts.StartIntentSenderForResult(),
-//                                        onResult = { result ->
-//                                            if (result.resultCode == RESULT_OK) {
-//                                                lifecycleScope.launch {
-//                                                    val signInResult = googleAuthUiClient.signInWithClient(
-//                                                        intent = result.data ?: return@launch
-//                                                    )
-//                                                    viewModel.onSignInResult(signInResult)
-//                                                }
-//                                            }
-//                                        }
-//                                    )
-//                                LaunchedEffect(key1 = state.isSignedIn){
-//                                    val userData = googleAuthUiClient.getSignedInUser()
-//                                    userData?.run {
-//                                        viewModel.addUserToFirestore(userData)
-//                                        viewModel.getUserData(userData.userId)
-//                                        navController.navigate(ChatsScreen)
-//
-//                                        viewModel.connectToSocket()
-//                                    }
-//
-//                                }
-//                                SignInScreenUI(
-//                                    onSignInClick = {
-//                                        lifecycleScope.launch {
-//                                            val signInIntentSender = googleAuthUiClient.signIn()
-//                                            launcher.launch(
-//                                                IntentSenderRequest.Builder(
-//                                                    signInIntentSender ?: return@launch
-//                                                ).build()
-//                                            )
-//                                        }
-//                                    }
-//                                )
-//                            }
-//                            composable<ChatsScreen> {
-//                                ChatsScreenUI(navController = navController,chatViewModel = viewModel)
-//
-//                            }
-//                            // Add the new destination for our feature
-//                            composable<PromptWriterScreen> {
-//                                PromptWriterScreen()
-//                            }
-//
-//                            composable<ConversationScreen> { backStackEntry ->
-//                                // Extract the route object which contains the chatId
-//                                val conversationRoute = backStackEntry.toRoute<ConversationScreen>()
-//                                // Pass the chatId to your screen
-//                                ConversationScreen(chatId = conversationRoute.chatId,chatViewModel = viewModel)
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
-//

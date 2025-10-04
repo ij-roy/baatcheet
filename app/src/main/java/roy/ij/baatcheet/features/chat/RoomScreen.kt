@@ -7,9 +7,14 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import roy.ij.baatcheet.navigation.NavRoutes
 
 @Composable
-fun RoomScreen(viewModel: RoomViewModel = viewModel()) {
+fun RoomScreen(
+    navController: NavController,
+    viewModel: RoomViewModel = viewModel()
+) {
     val state by viewModel.state.collectAsState()
 
     var code by remember { mutableStateOf("") }
@@ -40,5 +45,10 @@ fun RoomScreen(viewModel: RoomViewModel = viewModel()) {
         state.error?.let { Text("Error: $it", color = MaterialTheme.colorScheme.error) }
         state.message?.let { Text("Server says: $it") }
         state.roomId?.let { Text("Your room id: ${state.roomId} (alias ${state.alias})") }
+    }
+    LaunchedEffect(state.roomId) {
+        state.roomId?.let { id ->
+            navController.navigate(NavRoutes.Conversation.create(id))
+        }
     }
 }

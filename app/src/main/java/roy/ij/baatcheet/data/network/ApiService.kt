@@ -18,6 +18,13 @@ data class CreateRoomReq(val codePhrase: String?, val durationMinutes: Int?)
 data class CreateRoomResp(val roomId: String, val alias: String, val expiresAt: String?)
 data class JoinRoomReq(val roomId: String, val codePhrase: String?)
 data class ApproveReq(val roomId: String, val memberId: String)
+data class MemberDto(
+    val userId: String,
+    val alias: String,
+    val username: String?,
+    val publicKey: String?
+)
+data class MembersResp(val roomId: String, val members: List<MemberDto>)
 
 interface ApiService {
     @POST("/api/proxy/writer-prompt")
@@ -52,4 +59,17 @@ interface ApiService {
 
     @GET("rooms/mine")
     suspend fun listMyRooms(@Header("Authorization") bearer: String): Map<String, Any>
+
+    @GET("rooms/{roomId}/members")
+    suspend fun getRoomMembers(
+        @Header("Authorization") bearer: String,
+        @retrofit2.http.Path("roomId") roomId: String
+    ): MembersResp
+
+    @GET("messages/{roomId}")
+    suspend fun getHistory(
+        @Header("Authorization") bearer: String,
+        @retrofit2.http.Path("roomId") roomId: String
+    ): Map<String, Any>
+
 }

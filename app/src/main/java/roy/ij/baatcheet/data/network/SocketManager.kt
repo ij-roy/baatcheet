@@ -1,44 +1,47 @@
 package roy.ij.baatcheet.data.network
 
-import android.util.Log
 import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
-import roy.ij.baatcheet.BuildConfig
 
-object SocketManager {
-    private var mSocket: Socket? = null
-    fun getSocket(): Socket? {
-        return mSocket
+class SocketManager(private val token: String) {
+    private var socket: Socket? = null
+
+    fun connect() {
+        val opts = IO.Options().apply {
+            reconnection = true
+            forceNew = true
+            extraHeaders = mapOf("Authorization" to listOf("Bearer $token"))
+        }
+        socket = IO.socket("https://ij.dophera.xyz", opts)
+        socket?.connect()
     }
-    // Call this function after a user logs in
-    fun establishConnection(token: String) {
-        try {
-            val options = IO.Options().apply {
-                // Send the Firebase ID token for authentication
-                auth = mapOf("token" to token)
+
+    fun joinRoom(roomId: String, ack: ((JSONObject) -> Unit)? = null) {
+        val data = JSONObject(mapOf("roomId" to roomId))
+        socket?.emit("rooms:join", data, io.socket.client.Ack { args ->
+            if (args.isNotEmpty() && ack != null) {
+                ack(args[0] as JSONObject)
             }
-            // Use the base URL from your BuildConfig
-            mSocket = IO.socket(BuildConfig.BASE_URL, options)
-            mSocket?.connect()
-            mSocket?.on(Socket.EVENT_CONNECT) {
-                Log.d("SocketManager", "Successfully connected to the server.")
+        })
+    }
+
+    fun sendMessage(payload: JSONObject, ack: ((JSONObject) -> Unit)? = null) {
+        socket?.emit("message:send", payload, io.socket.client.Ack { args ->
+            if (args.isNotEmpty() && ack != null) {
+                ack(args[0] as JSONObject)
             }
-            mSocket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
-                Log.e("SocketManager", "Connection error: ${args.firstOrNull()}")
-            }
-        } catch (e: Exception) {
-            Log.e("SocketManager", "Failed to establish connection", e)
+        })
+    }
+
+
+    fun onNewMessage(handler: (JSONObject) -> Unit) {
+        socket?.on("message:new") { args ->
+            if (args.isNotEmpty()) handler(args[0] as JSONObject)
         }
     }
-    fun sendMessage(toUserId: String, message: String) {
-        val messageData = mapOf("toUserId" to toUserId, "message" to message)
-        mSocket?.emit("private_message", JSONObject(messageData))
-        Log.d("SocketManager", "Sent message to $toUserId: $message")
-    }
-    fun closeConnection() {
-        mSocket?.disconnect()
-        mSocket?.off() // Remove all listeners
-        Log.d("SocketManager", "Connection closed.")
+
+    fun disconnect() {
+        socket?.disconnect()
     }
 }

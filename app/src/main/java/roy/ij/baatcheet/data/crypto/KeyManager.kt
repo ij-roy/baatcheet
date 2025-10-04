@@ -6,7 +6,6 @@ import android.security.keystore.KeyProperties
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
-import java.security.spec.MGF1ParameterSpec
 import java.util.Base64   // for API >= 26
 import android.util.Base64 as ABase64 // fallback for <26
 
@@ -55,6 +54,17 @@ object KeyManager {
         } else {
             ABase64.encodeToString(der, ABase64.NO_WRAP)
         }
+    }
+
+    fun debugKeyFingerprint(): String {
+        val ks = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+        val cert = ks.getCertificate(KEY_ALIAS)
+            ?: return "❌ No keypair found"
+
+        val pubBytes = cert.publicKey.encoded
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(pubBytes)
+        return digest.joinToString("") { "%02x".format(it) }
     }
 
     fun hasKey(): Boolean {

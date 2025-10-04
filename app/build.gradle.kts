@@ -94,7 +94,9 @@ dependencies {
     implementation(libs.html)
 
     //socket.io
-    implementation(libs.socket.io.client)
+    implementation("io.socket:socket.io-client:2.1.0") {
+        exclude (group= "org.json", module= "json")
+    }
 
     // Room for local database
     implementation(libs.androidx.room.runtime)
