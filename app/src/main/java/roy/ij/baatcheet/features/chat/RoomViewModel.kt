@@ -19,9 +19,32 @@ class RoomViewModel(
         token = t
     }
 
-    // you’ll want to persist token somewhere (EncryptedSharedPreferences or DataStore)
-//    private var token: String? = null
-//    fun setToken(t: String) { token = t }
+    // 🔹 Added: room info flow for admin/pending view
+    private val _info = MutableStateFlow<RoomInfoResp?>(null)
+    val info: StateFlow<RoomInfoResp?> = _info
+
+    // 🔹 Added: fetch full room info
+    suspend fun refresh(roomId: String) {
+        val t = token ?: return
+        _info.value = api.roomInfo("Bearer $t", roomId)
+    }
+
+    // 🔹 Added: approve & deny actions
+    fun approve(roomId: String, memberId: String) {
+        val t = token ?: return
+        viewModelScope.launch {
+            api.approve("Bearer $t", ApproveReq(roomId, memberId))
+            refresh(roomId)
+        }
+    }
+
+    fun deny(roomId: String, memberId: String) {
+        val t = token ?: return
+        viewModelScope.launch {
+            api.denyMember("Bearer $t", mapOf("roomId" to roomId, "memberId" to memberId))
+            refresh(roomId)
+        }
+    }
 
     fun createRoom(code: String?, duration: Int?) {
         val bearer = "Bearer ${roy.ij.baatcheet.data.AuthSession.token ?: return}"
@@ -41,12 +64,12 @@ class RoomViewModel(
         }
     }
 
-    fun joinRoom(roomId: String, code: String?) {
+    fun joinRoom(roomId: String, code: String?, joinNote: String?) {
         val bearer = "Bearer ${roy.ij.baatcheet.data.AuthSession.token ?: return}"
         _state.value = RoomState(isLoading = true)
         viewModelScope.launch {
             try {
-                val resp = api.joinRoom(bearer, JoinRoomReq(roomId, code))
+                val resp = api.joinRoom(bearer, JoinRoomReq(roomId, code, joinNote))
                 _state.value = RoomState(
                     isLoading = false,
                     message = resp["message"] as? String ?: "Join requested"

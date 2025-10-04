@@ -17,8 +17,8 @@ android {
         applicationId = "roy.ij.baatcheet"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -26,17 +26,42 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+            isShrinkResources = false
+
+            // ✅ Define production URLs
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"https://baatcheet-backend-jrndg.ondigitalocean.app/\""
             )
-            // Define the production server URL for release builds
-            buildConfigField("String", "BASE_URL", "\"https://baatcheet-backend-jrndg.ondigitalocean.app/\"")
+            buildConfigField(
+                "String",
+                "API_BASE_URL",
+                "\"https://baatcheet-backend-jrndg.ondigitalocean.app/api/\""
+            )
+            buildConfigField(
+                "String",
+                "SOCKET_BASE_URL",
+                "\"https://baatcheet-backend-jrndg.ondigitalocean.app\""
+            )
         }
         debug {
-            // Define the local server URL for debug builds
-            // 10.0.2.2 is the special IP address for your computer's localhost from the Android emulator
-            buildConfigField("String", "BASE_URL", "\"https://ij.dophera.xyz/\"")
+            // ✅ Local/dev URLs
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"https://ij.dophera.xyz/\""
+            )
+            buildConfigField(
+                "String",
+                "API_BASE_URL",
+                "\"https://ij.dophera.xyz/api/\""
+            )
+            buildConfigField(
+                "String",
+                "SOCKET_BASE_URL",
+                "\"https://ij.dophera.xyz\""
+            )
         }
     }
     compileOptions {
@@ -49,6 +74,9 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    lint {
+        disable += "NullSafeMutableLiveData"
     }
 }
 

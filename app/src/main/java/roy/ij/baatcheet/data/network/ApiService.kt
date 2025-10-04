@@ -4,6 +4,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 import roy.ij.baatcheet.WriterRequest
 import roy.ij.baatcheet.WriterResponse
@@ -16,7 +17,7 @@ data class PublicKeyRequest(val publicKey: String)
 data class OkResponse(val ok: Boolean)
 data class CreateRoomReq(val codePhrase: String?, val durationMinutes: Int?)
 data class CreateRoomResp(val roomId: String, val alias: String, val expiresAt: String?)
-data class JoinRoomReq(val roomId: String, val codePhrase: String?)
+data class JoinRoomReq(val roomId: String, val codePhrase: String?, val joinNote: String?)
 data class ApproveReq(val roomId: String, val memberId: String)
 data class MemberDto(
     val userId: String,
@@ -25,6 +26,9 @@ data class MemberDto(
     val publicKey: String?
 )
 data class MembersResp(val roomId: String, val members: List<MemberDto>)
+data class RoomInfoResp(val roomId: String, val isAdmin: Boolean, val expiresAt: String?, val members: List<MemberInfo>)
+data class MemberInfo(val userId: String, val alias: String, val status: String, val requestedAt: String?, val joinNote: String?)
+
 
 interface ApiService {
     @POST("/api/proxy/writer-prompt")
@@ -54,8 +58,7 @@ interface ApiService {
                          @Body req: JoinRoomReq): Map<String, Any>
 
     @POST("rooms/approve")
-    suspend fun approve(@Header("Authorization") bearer: String,
-                        @Body req: ApproveReq): Map<String, Any>
+    suspend fun approve(@Header("Authorization") bearer: String, @Body req: ApproveReq): Map<String, Any>
 
     @GET("rooms/mine")
     suspend fun listMyRooms(@Header("Authorization") bearer: String): Map<String, Any>
@@ -71,5 +74,11 @@ interface ApiService {
         @Header("Authorization") bearer: String,
         @retrofit2.http.Path("roomId") roomId: String
     ): Map<String, Any>
+
+    @GET("rooms/{roomId}/info")
+    suspend fun roomInfo(@Header("Authorization") bearer: String, @Path("roomId") roomId: String): RoomInfoResp
+
+    @POST("rooms/deny")
+    suspend fun denyMember(@Header("Authorization") bearer: String, @Body body: Map<String, String>): Map<String, Any>
 
 }

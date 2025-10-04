@@ -1,18 +1,19 @@
 package roy.ij.baatcheet.features.chat
 
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import roy.ij.baatcheet.navigation.NavRoutes
 
 @Composable
@@ -22,41 +23,125 @@ fun ChatListScreen(
 ) {
     val vm: ChatListViewModel = viewModel()
     val rooms by vm.rooms.collectAsState()
-
     LaunchedEffect(token) { vm.load(token) }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("My Rooms", style = MaterialTheme.typography.titleLarge)
+    val myUserId by vm.myUserId.collectAsState()
 
-        LazyColumn {
+    var profileRoomId by remember { mutableStateOf<String?>(null) }
+    val roomVm: RoomViewModel = viewModel()
+    LaunchedEffect(token) { roomVm.setToken(token) }
+
+
+
+    var fabExpanded by remember { mutableStateOf(false) }
+
+    Box(Modifier.fillMaxSize()) {
+
+        // 🔹 Rooms list
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
             items(rooms) { room ->
                 val roomId = room["roomId"] as String
                 val members = room["members"] as List<Map<String, Any>>
-                val me = members.find { (it["status"] == "approved") }
-                val amApproved = me != null && me["status"] == "approved"
 
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            enabled = amApproved,
-                            indication = null, // 👈 removes ripple, avoids crash
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) {
-                            navController.navigate(NavRoutes.Conversation.create(roomId))
-                        }
-                        .padding(12.dp)
-                ) {
-                    Text("Room $roomId")
-                    Spacer(Modifier.weight(1f))
-                    if (amApproved) Text("✅") else Text("⏳ waiting")
-                }
+                val me = members.find { it["userId"] == myUserId }
+                val amApproved = me?.get("status") == "approved"
+
+                RoomRow(
+                    roomId = roomId,
+                    isApproved = amApproved,
+                    onOpen = {
+                        navController.navigate(NavRoutes.Conversation.create(roomId))
+                    },
+                    onOpenProfile = {
+                        profileRoomId = roomId   // 👈 opens the bottom sheet instead of navigating
+                    }
+                )
             }
         }
 
-        Spacer(Modifier.height(20.dp))
-        Button(onClick = { navController.navigate(NavRoutes.Room.route) }) {
-            Text("Create/Join Room")
+        // 🔹 Floating Speed Dial FAB
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            if (fabExpanded) {
+                SmallFab("Show Profile (QR)") {
+                    // TODO: next phase
+                }
+                Spacer(Modifier.height(8.dp))
+
+                SmallFab("Scan QR") {
+                    // TODO: next phase
+                }
+                Spacer(Modifier.height(8.dp))
+
+                SmallFab("Create Room") {
+                    navController.navigate(NavRoutes.Room.route)
+                }
+                Spacer(Modifier.height(8.dp))
+
+                SmallFab("Join Room") {
+                    navController.navigate(NavRoutes.Room.route)
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            FloatingActionButton(onClick = { fabExpanded = !fabExpanded }) {
+                Text(if (fabExpanded) "×" else "+")
+            }
         }
+        // 🔹 Show the bottom sheet when a room is selected
+        if (profileRoomId != null) {
+            RoomDetailsSheet(
+                roomId = profileRoomId!!,
+                vm = roomVm,
+                onClose = { profileRoomId = null }
+            )
+        }
+
     }
 }
+
+@Composable
+private fun SmallFab(text: String, onClick: () -> Unit) {
+    ExtendedFloatingActionButton(
+        text = { Text(text) },
+        onClick = onClick,
+        icon = {},
+        expanded = true
+    )
+}
+
+@Composable
+private fun RoomRow(
+    roomId: String,
+    isApproved: Boolean,
+    onOpen: () -> Unit,
+    onOpenProfile: () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable(
+                enabled = isApproved,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { onOpen() },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Room $roomId")
+        Spacer(Modifier.weight(1f))
+        IconButton(onClick = onOpenProfile) {
+            Icon(Icons.Default.Info, contentDescription = "Room profile")
+        }
+        Text(if (isApproved) "✅" else "⏳")
+    }
+}
+

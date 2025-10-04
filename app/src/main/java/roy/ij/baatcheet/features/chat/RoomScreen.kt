@@ -35,7 +35,7 @@ fun RoomScreen(
         OutlinedTextField(value = roomId, onValueChange = { roomId = it }, label = { Text("Room ID") })
         OutlinedTextField(value = joinCode, onValueChange = { joinCode = it }, label = { Text("Code phrase") }) // <-- NEW
         Button(onClick = {
-            viewModel.joinRoom(roomId, joinCode.ifBlank { null })   // <-- use joinCode, not code
+            viewModel.joinRoom(roomId, joinCode.ifBlank { null }, null)  // <-- use joinCode, not code
         }) { Text("Join") }
 
         Spacer(Modifier.height(24.dp))

@@ -4,14 +4,16 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import roy.ij.baatcheet.BuildConfig
 
 object RetrofitClient {
-    private const val BASE_URL = "https://ij.dophera.xyz/api/"
+    private const val BASE_URL = BuildConfig.API_BASE_URL
     // use 10.0.2.2 for emulator; replace with your LAN IP for device
 
     private val client = OkHttpClient.Builder()
         .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
+            else HttpLoggingInterceptor.Level.BASIC
         })
         .build()
 

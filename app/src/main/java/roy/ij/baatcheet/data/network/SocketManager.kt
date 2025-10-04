@@ -3,6 +3,7 @@ package roy.ij.baatcheet.data.network
 import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
+import roy.ij.baatcheet.BuildConfig
 
 class SocketManager(private val token: String) {
     private var socket: Socket? = null
@@ -13,7 +14,7 @@ class SocketManager(private val token: String) {
             forceNew = true
             extraHeaders = mapOf("Authorization" to listOf("Bearer $token"))
         }
-        socket = IO.socket("https://ij.dophera.xyz", opts)
+        socket = IO.socket(BuildConfig.SOCKET_BASE_URL, opts)
         socket?.connect()
     }
 

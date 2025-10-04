@@ -19,3 +19,15 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Retrofit / OkHttp
+-keep class okhttp3.** { *; }
+-keep class okio.** { *; }
+-keepattributes Signature
+-dontwarn okio.**
+
+# Gson DTOs (if using Gson)
+-keep class roy.ij.baatcheet.** { *; }
+
+# Socket.IO JSON
+-dontwarn org.json.**
