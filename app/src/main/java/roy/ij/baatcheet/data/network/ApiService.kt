@@ -28,6 +28,8 @@ data class MemberDto(
 data class MembersResp(val roomId: String, val members: List<MemberDto>)
 data class RoomInfoResp(val roomId: String, val isAdmin: Boolean, val expiresAt: String?, val members: List<MemberInfo>)
 data class MemberInfo(val userId: String, val alias: String, val status: String, val requestedAt: String?, val joinNote: String?)
+data class DmStartReq(val targetUsername: String? = null, val targetUserId: String? = null)
+data class DmStartResp(val roomId: String, val type: String, val reused: Boolean)
 
 
 interface ApiService {
@@ -81,4 +83,9 @@ interface ApiService {
     @POST("rooms/deny")
     suspend fun denyMember(@Header("Authorization") bearer: String, @Body body: Map<String, String>): Map<String, Any>
 
+    @POST("rooms/dm/start")
+    suspend fun startDm(
+        @Header("Authorization") bearer: String,
+        @Body req: DmStartReq
+    ): DmStartResp
 }

@@ -24,4 +24,6 @@ sealed class NavRoutes(val route: String) {
     object Conversation : NavRoutes("conversation/{roomId}") {
         fun create(roomId: String) = "conversation/$roomId"
     }
+    object MyQr : NavRoutes("myqr")
+    object ScanOrType : NavRoutes("scanType")
 }

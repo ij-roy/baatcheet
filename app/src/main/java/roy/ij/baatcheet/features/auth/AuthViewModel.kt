@@ -60,17 +60,17 @@ class AuthViewModel(
             try {
                 // Ensure keypair exists
                 roy.ij.baatcheet.data.crypto.KeyManager.ensureKeyPair()
-                println("inside afterAuthSuccess function")
+//                println("inside afterAuthSuccess function")
 
                 // 🔑 Debug print
                 val fingerprint = roy.ij.baatcheet.data.crypto.KeyManager.debugKeyFingerprint()
-                println("🔑 Current key fingerprint: $fingerprint")
+//                println("🔑 Current key fingerprint: $fingerprint")
 
                 // Export public key
                 val pubB64 = roy.ij.baatcheet.data.crypto.KeyManager.exportPublicKeyBase64()
 
                 // Upload to backend
-                println("inside upload to backend")
+//                println("inside upload to backend")
                 repo.uploadPublicKey(token, pubB64)
             } catch (e: Exception) {
                 e.printStackTrace()

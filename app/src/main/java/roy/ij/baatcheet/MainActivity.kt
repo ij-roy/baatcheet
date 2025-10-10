@@ -4,13 +4,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,6 +27,9 @@ import roy.ij.baatcheet.features.chat.ChatViewModel
 import roy.ij.baatcheet.features.chat.ConversationScreen
 import roy.ij.baatcheet.features.chat.RoomScreen
 import roy.ij.baatcheet.features.chat.RoomViewModel
+import roy.ij.baatcheet.features.dm.MyProfileQrScreen
+import roy.ij.baatcheet.features.dm.MyProfileQrViewModel
+import roy.ij.baatcheet.features.dm.ScanOrTypeScreen
 import roy.ij.baatcheet.navigation.NavRoutes
 import roy.ij.baatcheet.ui.theme.BaatCheetTheme
 
@@ -84,7 +90,29 @@ class MainActivity : ComponentActivity() {
                             }
                             ConversationScreen(viewModel = chatVm)
                         }
+                        composable(NavRoutes.MyQr.route) {
+                            val token = authState.token ?: return@composable
+                            val vm: MyProfileQrViewModel = viewModel()
+                            val user by vm.user.collectAsState()
 
+                            LaunchedEffect(Unit) { vm.load(token) }
+
+                            user?.let {
+                                MyProfileQrScreen(username = it.username, userId = it.id)
+                            } ?: run {
+                                LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
+                            }
+                        }
+
+                        composable(NavRoutes.ScanOrType.route) {
+                            val token = authState.token ?: return@composable
+                            ScanOrTypeScreen(token = token) { roomId ->
+                                // on success -> go to DM conversation
+                                navController.navigate(NavRoutes.Conversation.create(roomId)) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
                     }
                 }
             }

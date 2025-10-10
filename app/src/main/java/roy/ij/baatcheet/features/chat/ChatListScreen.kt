@@ -46,18 +46,29 @@ fun ChatListScreen(
             items(rooms) { room ->
                 val roomId = room["roomId"] as String
                 val members = room["members"] as List<Map<String, Any>>
+                val isDm = (room["type"] as? String) == "dm"
 
                 val me = members.find { it["userId"] == myUserId }
                 val amApproved = me?.get("status") == "approved"
 
+                // 🧠 For DMs, show the *other person’s* alias or username
+                val displayName = if (isDm) {
+                    val other = members.find { it["userId"] != myUserId }
+                    other?.get("username") as? String ?: other?.get("alias") as? String ?: "Unknown User"
+                } else {
+                    "Room • $roomId"
+                }
+
                 RoomRow(
                     roomId = roomId,
                     isApproved = amApproved,
+                    isDm = isDm,
+                    displayName = displayName,   // 👈 added this
                     onOpen = {
                         navController.navigate(NavRoutes.Conversation.create(roomId))
                     },
                     onOpenProfile = {
-                        profileRoomId = roomId   // 👈 opens the bottom sheet instead of navigating
+                        profileRoomId = roomId
                     }
                 )
             }
@@ -71,22 +82,26 @@ fun ChatListScreen(
             horizontalAlignment = Alignment.End
         ) {
             if (fabExpanded) {
-                SmallFab("Show Profile (QR)") {
-                    // TODO: next phase
+                SmallFab("Show My QR") {
+                    fabExpanded = false
+                    navController.navigate(NavRoutes.MyQr.route)
                 }
                 Spacer(Modifier.height(8.dp))
 
-                SmallFab("Scan QR") {
-                    // TODO: next phase
+                SmallFab("Scan / Type Username") {
+                    fabExpanded = false
+                    navController.navigate(NavRoutes.ScanOrType.route)
                 }
                 Spacer(Modifier.height(8.dp))
 
                 SmallFab("Create Room") {
+                    fabExpanded = false
                     navController.navigate(NavRoutes.Room.route)
                 }
                 Spacer(Modifier.height(8.dp))
 
                 SmallFab("Join Room") {
+                    fabExpanded = false
                     navController.navigate(NavRoutes.Room.route)
                 }
                 Spacer(Modifier.height(8.dp))
@@ -122,6 +137,8 @@ private fun SmallFab(text: String, onClick: () -> Unit) {
 private fun RoomRow(
     roomId: String,
     isApproved: Boolean,
+    isDm: Boolean,
+    displayName: String,
     onOpen: () -> Unit,
     onOpenProfile: () -> Unit
 ) {
@@ -136,7 +153,7 @@ private fun RoomRow(
             ) { onOpen() },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Room $roomId")
+        Text(displayName)
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onOpenProfile) {
             Icon(Icons.Default.Info, contentDescription = "Room profile")

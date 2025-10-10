@@ -140,4 +140,9 @@ dependencies {
 
     // OkHttp logging (nice for debugging network calls)
     implementation(libs.logging.interceptor)
+
+    // Zingx core
+    implementation(libs.zxing.core)
+    // ZXing embedded (camera scan)
+    implementation(libs.zxing.android.embedded)
 }
