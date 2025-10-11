@@ -3,6 +3,7 @@ package roy.ij.baatcheet.data.crypto
 import android.util.Base64
 import java.security.KeyFactory
 import java.security.KeyStore
+import java.security.SecureRandom
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
@@ -67,5 +68,21 @@ object CryptoHelper {
         cipher.init(Cipher.DECRYPT_MODE, priv, oaepParams)
         val decoded = cipher.doFinal(Base64.decode(encKeyB64, Base64.NO_WRAP))
         return javax.crypto.spec.SecretKeySpec(decoded, "AES")
+    }
+
+    fun encryptBytes(plain: ByteArray, secret: SecretKey): Pair<ByteArray, String> {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        val iv = ByteArray(12)
+        SecureRandom().nextBytes(iv)
+        cipher.init(Cipher.ENCRYPT_MODE, secret, GCMParameterSpec(128, iv))
+        val encrypted = cipher.doFinal(plain)
+        return Pair(encrypted, Base64.encodeToString(iv, Base64.NO_WRAP))
+    }
+
+    fun decryptBytes(cipher: ByteArray, ivB64: String, secret: SecretKey): ByteArray {
+        val iv = Base64.decode(ivB64, Base64.NO_WRAP)
+        val cipherInst = Cipher.getInstance("AES/GCM/NoPadding")
+        cipherInst.init(Cipher.DECRYPT_MODE, secret, GCMParameterSpec(128, iv))
+        return cipherInst.doFinal(cipher)
     }
 }

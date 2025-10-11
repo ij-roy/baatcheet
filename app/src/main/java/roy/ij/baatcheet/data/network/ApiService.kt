@@ -30,6 +30,9 @@ data class RoomInfoResp(val roomId: String, val isAdmin: Boolean, val expiresAt:
 data class MemberInfo(val userId: String, val alias: String, val status: String, val requestedAt: String?, val joinNote: String?)
 data class DmStartReq(val targetUsername: String? = null, val targetUserId: String? = null)
 data class DmStartResp(val roomId: String, val type: String, val reused: Boolean)
+data class UploadUrlReq(val contentType: String)
+data class UploadUrlResp(val uploadUrl: String, val fileUrl: String, val fileKey: String)
+data class DownloadUrlResp(val downloadUrl: String)
 
 
 interface ApiService {
@@ -88,4 +91,17 @@ interface ApiService {
         @Header("Authorization") bearer: String,
         @Body req: DmStartReq
     ): DmStartResp
+
+    @POST("media/upload-url")
+    suspend fun getUploadUrl(
+        @Header("Authorization") bearer: String,
+        @Body body: UploadUrlReq
+    ): UploadUrlResp
+
+    @GET("media/download-url")
+    suspend fun getDownloadUrl(
+        @Header("Authorization") bearer: String,
+        @Query("fileKey") fileKey: String
+    ): DownloadUrlResp
+
 }

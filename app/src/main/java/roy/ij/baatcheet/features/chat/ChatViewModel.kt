@@ -1,16 +1,21 @@
 package roy.ij.baatcheet.features.chat
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.json.JSONObject
+import roy.ij.baatcheet.App
 import roy.ij.baatcheet.data.crypto.CryptoHelper
 import roy.ij.baatcheet.data.network.SocketManager
 import roy.ij.baatcheet.data.network.MemberDto
 import roy.ij.baatcheet.data.network.RetrofitClient
 import roy.ij.baatcheet.data.network.ApiService
+import roy.ij.baatcheet.data.network.UploadUrlReq
 import javax.crypto.SecretKey
 import java.time.Instant
 
@@ -58,30 +63,83 @@ class ChatViewModel(
 
                 // 4) subscribe to incoming messages
                 socket.onNewMessage { msg ->
-                    // msg: { _id, roomId, alias, type, ciphertext, iv, encKey, createdAt }
                     try {
-//                        println("inside try 1 📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
                         val senderId = msg.optString("senderId")
                         val myId = state.value.myUserId
-                        if (senderId == myId) {
-                            // 👇 ignore messages I just sent myself
+                        if (senderId == myId) return@onNewMessage
+
+                        val type = msg.optString("type", "text")
+                        val alias = msg.optString("alias", "Unknown")
+
+                        // 1️⃣ find my encryption key
+                        var myEncKey: String? = null
+                        if (msg.has("encKey")) {
+                            // backend now sends this flat field
+                            myEncKey = msg.getString("encKey")
+                        } else if (msg.has("keyEnvelope")) {
+                            val envs = msg.getJSONArray("keyEnvelope")
+                            for (i in 0 until envs.length()) {
+                                val e = envs.getJSONObject(i)
+                                if (e.getString("userId") == myId) {
+                                    myEncKey = e.getString("encKey")
+                                    break
+                                }
+                            }
+                        }
+
+                        if (myEncKey == null) {
+                            appendMessage(ChatMessage(null, "System", "⚠️ no key for this message", false, System.currentTimeMillis()))
                             return@onNewMessage
                         }
 
-                        val encKey = msg.getString("encKey")
-                        val secret: SecretKey = CryptoHelper.unwrapAesKey(encKey)
-                        val text = CryptoHelper.decryptAes(msg.getString("ciphertext"), msg.getString("iv"), secret)
-                        val alias = msg.getString("alias")
-                        val id = msg.optString("_id", null)
-                        val at = Instant.parse(msg.getString("createdAt")).toEpochMilli()
-                        appendMessage(ChatMessage(id, alias, text, mine = false, at = at))
+                        val secret = CryptoHelper.unwrapAesKey(myEncKey)
+                        val iv = msg.optString("iv", "")
+
+                        if (type == "media") {
+                            // ---------- MEDIA MESSAGE ----------
+                            val fileUrl = msg.optString("fileUrl", "")
+                            val mime = msg.optString("fileMime", "application/octet-stream")
+
+                            val fileKey = msg.optString("fileKey", "")
+                            viewModelScope.launch(Dispatchers.IO) {
+                                try {
+                                    val signed = api.getDownloadUrl("Bearer $token", fileKey)
+                                    val data = download(signed.downloadUrl)
+                                    val plain = CryptoHelper.decryptBytes(data, iv, secret)
+
+                                    val ctx = App.context
+                                    val f = java.io.File(ctx.cacheDir, "dec_${System.currentTimeMillis()}")
+                                    f.writeBytes(plain)
+
+                                    withContext(Dispatchers.Main) {
+                                        appendMessage(
+                                            ChatMessage(
+                                                null,
+                                                alias,
+                                                text = "📎 Media received ($mime)",
+                                                mine = false,
+                                                at = System.currentTimeMillis()
+                                            )
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    appendMessage(ChatMessage(null, "System", "⚠️ media decrypt failed", false, System.currentTimeMillis()))
+                                }
+                            }
+                        } else {
+                            // ---------- TEXT MESSAGE ----------
+                            val text = CryptoHelper.decryptAes(msg.getString("ciphertext"), iv, secret)
+                            val id = msg.optString("_id", null)
+                            val at = Instant.parse(msg.getString("createdAt")).toEpochMilli()
+                            appendMessage(ChatMessage(id, alias, text, mine = false, at = at))
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
-//                        println("inside catch 1📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
-                        appendMessage(ChatMessage(null, "System", "⚠️ failed to decrypt a message", false, System.currentTimeMillis()))
-//                        println("inside catch 2📩 msg:new encKey.len=${msg.optString("encKey").length} iv.len=${msg.optString("iv").length} ct.len=${msg.optString("ciphertext").length}")
+                        appendMessage(ChatMessage(null, "System", "⚠️ failed to decrypt message", false, System.currentTimeMillis()))
                     }
                 }
+
 
                 // 5) (optional) load history once
                 // 5) Load and decrypt message history before listening to new messages
@@ -179,5 +237,83 @@ class ChatViewModel(
     override fun onCleared() {
         super.onCleared()
         socket.disconnect()
+    }
+
+    fun sendMedia(uri: Uri) {
+        val ctx = App.instance // or pass from Composable
+        val token = token
+        val members = state.value.members
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val contentResolver = ctx.contentResolver
+                val mime = contentResolver.getType(uri) ?: "application/octet-stream"
+
+                // 1️⃣ get presigned URL
+                val upload = api.getUploadUrl("Bearer $token", UploadUrlReq(mime))
+
+                // 2️⃣ read bytes
+                val input = contentResolver.openInputStream(uri)!!
+                val plain = input.readBytes()
+                input.close()
+
+                // 3️⃣ encrypt file
+                val secret = CryptoHelper.generateAesKey()
+                val (ciphertext, iv) = CryptoHelper.encryptBytes(plain, secret)
+
+                // 4️⃣ upload encrypted bytes
+                val ok = putToUrl(upload.uploadUrl, ciphertext, mime)
+                if (!ok) throw Exception("Upload failed")
+
+                // 5️⃣ wrap AES key for each member
+                val envelopes = members.map { m ->
+                    val encKey = CryptoHelper.wrapAesKey(secret, m.publicKey!!)
+                    mapOf("userId" to m.userId, "encKey" to encKey)
+                }
+
+                // 6️⃣ emit socket message
+                val payload = JSONObject(
+                    mapOf(
+                        "roomId" to state.value.roomId,
+                        "type" to "media",
+                        "fileUrl" to upload.fileUrl,
+                        "fileKey" to upload.fileKey,
+                        "fileMime" to mime,
+                        "iv" to iv,
+                        "keyEnvelope" to envelopes
+                    )
+                )
+                socket.sendMessage(payload) {}
+
+                withContext(Dispatchers.Main) {
+                    appendMessage(
+                        ChatMessage(
+                            id = null,
+                            alias = "Me",
+                            text = "📎 ${uri.lastPathSegment}",
+                            mine = true,
+                            at = System.currentTimeMillis()
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun putToUrl(url: String, data: ByteArray, mime: String): Boolean {
+        return try {
+            val req = okhttp3.Request.Builder()
+                .url(url)
+                .put(okhttp3.RequestBody.create(mime.toMediaTypeOrNull(), data))
+                .build()
+            val resp = okhttp3.OkHttpClient().newCall(req).execute()
+            resp.isSuccessful.also { resp.close() }
+        } catch (_: Exception) { false }
+    }
+
+    private fun download(url: String): ByteArray {
+        val req = okhttp3.Request.Builder().url(url).build()
+        return okhttp3.OkHttpClient().newCall(req).execute().use { it.body!!.bytes() }
     }
 }
