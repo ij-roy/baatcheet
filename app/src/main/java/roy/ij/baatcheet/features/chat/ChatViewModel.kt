@@ -108,6 +108,7 @@ class ChatViewModel(
                         if (type == "media") {
                             // ---------- MEDIA MESSAGE ----------
                             val fileUrl = msg.optString("fileUrl", "")
+                            val fileKey = msg.optString("fileKey", null)
                             val mime = msg.optString("fileMime", "application/octet-stream")
 
                             // find my AES key
@@ -138,7 +139,12 @@ class ChatViewModel(
                             viewModelScope.launch(Dispatchers.IO) {
                                 try {
                                     // 1️⃣ download encrypted file directly
-                                    val encBytes = download(fileUrl)
+                                    val encBytes: ByteArray = if (!fileKey.isNullOrEmpty()) {
+                                        val signed = api.getDownloadUrl("Bearer $token", fileKey)
+                                        download(signed.downloadUrl)
+                                    } else {
+                                        download(fileUrl) // fallback
+                                    }
 
                                     // 2️⃣ decrypt bytes
                                     val plain = CryptoHelper.decryptBytes(encBytes, iv, secret)
@@ -416,11 +422,4 @@ class ChatViewModel(
         return okhttp3.OkHttpClient().newCall(req).execute().use { it.body!!.bytes() }
     }
 
-    private fun basenameFromKeyOrUrl(fileKey: String?, fileUrl: String?): String? {
-        return when {
-            !fileKey.isNullOrBlank() -> fileKey.substringAfterLast('/')
-            !fileUrl.isNullOrBlank() -> Uri.parse(fileUrl).lastPathSegment
-            else -> null
-        }
-    }
 }
