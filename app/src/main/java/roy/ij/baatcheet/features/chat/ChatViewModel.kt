@@ -219,6 +219,7 @@ class ChatViewModel(
 
                     if (type == "media") {
                         // --- handle media messages ---
+                        val isMine = (m["senderId"]?.toString() == myId)
                         val fileKey = m["fileKey"]?.toString()
                         val fileUrl = m["fileUrl"]?.toString()
                         val mime = m["fileMime"]?.toString() ?: "application/octet-stream"
@@ -234,10 +235,17 @@ class ChatViewModel(
                             return@mapNotNull null // skip undownloadable
                         }
 
+                        val name = basenameFromKeyOrUrl(fileKey, fileUrl)
+                        val displayText = if (isMine) {
+                            // mirror the optimistic “📎 filename” you show when sending
+                            "📎 ${name ?: "Media"}"
+                        } else {
+                            "📎 Media received ($mime)"
+                        }
                         ChatMessage(
                             id = m["_id"]?.toString(),
                             alias = alias,
-                            text = "📎 Media received ($mime)",
+                            text = displayText,
                             mine = (m["senderId"] as? String) == myId,
                             at = at
                         )
@@ -351,4 +359,13 @@ class ChatViewModel(
         val req = okhttp3.Request.Builder().url(url).build()
         return okhttp3.OkHttpClient().newCall(req).execute().use { it.body!!.bytes() }
     }
+
+    private fun basenameFromKeyOrUrl(fileKey: String?, fileUrl: String?): String? {
+        return when {
+            !fileKey.isNullOrBlank() -> fileKey.substringAfterLast('/')
+            !fileUrl.isNullOrBlank() -> Uri.parse(fileUrl).lastPathSegment
+            else -> null
+        }
+    }
+
 }
