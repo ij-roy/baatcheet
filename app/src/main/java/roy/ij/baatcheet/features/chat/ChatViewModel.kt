@@ -202,31 +202,66 @@ class ChatViewModel(
         _state.update { it.copy(messages = it.messages + m) }
     }
 
-    private suspend fun loadHistory(token: String, roomId: String, myId: String) {
+    private suspend fun loadHistory(token: String, roomId: String, myId: String) = withContext(Dispatchers.IO) {
         try {
             val hist = repo.history(token, roomId)
-            val arr = (hist["messages"] as? List<*>) ?: return
+            val arr = (hist["messages"] as? List<*>) ?: return@withContext
             val msgs = arr.mapNotNull { any ->
                 try {
                     val m = any as Map<*, *>
                     val envs = m["keyEnvelope"] as? List<*> ?: return@mapNotNull null
                     val myEnv = envs.firstOrNull { (it as Map<*, *>)["userId"] == myId } as? Map<*, *> ?: return@mapNotNull null
                     val secret = CryptoHelper.unwrapAesKey(myEnv["encKey"] as String)
-                    val text = CryptoHelper.decryptAes(
-                        m["ciphertext"] as String,
-                        (m["iv"] as? String) ?: "",
-                        secret
-                    )
-                    ChatMessage(
-                        id = m["_id"]?.toString(),
-                        alias = m["alias"] as String,
-                        text = text,
-                        mine = (m["senderId"] as? String) == myId,
-                        at = Instant.parse(m["createdAt"] as String).toEpochMilli()
-                    )
-                } catch (_: Exception) { null }
+                    val type = (m["type"] as? String) ?: "text"
+                    val alias = m["alias"]?.toString() ?: "Unknown"
+                    val at = Instant.parse(m["createdAt"] as String).toEpochMilli()
+                    val iv = (m["iv"] as? String) ?: ""
+
+                    if (type == "media") {
+                        // --- handle media messages ---
+                        val fileKey = m["fileKey"]?.toString()
+                        val fileUrl = m["fileUrl"]?.toString()
+                        val mime = m["fileMime"]?.toString() ?: "application/octet-stream"
+
+                        if (!fileKey.isNullOrBlank()) {
+                            val signed = api.getDownloadUrl("Bearer $token", fileKey)
+                            val data = download(signed.downloadUrl)
+                            CryptoHelper.decryptBytes(data, iv, secret) // just test decryption
+                        } else if (!fileUrl.isNullOrBlank()) {
+                            val data = download(fileUrl)
+                            CryptoHelper.decryptBytes(data, iv, secret)
+                        } else {
+                            return@mapNotNull null // skip undownloadable
+                        }
+
+                        ChatMessage(
+                            id = m["_id"]?.toString(),
+                            alias = alias,
+                            text = "📎 Media received ($mime)",
+                            mine = (m["senderId"] as? String) == myId,
+                            at = at
+                        )
+                    } else {
+                        // --- handle text messages ---
+                        val text = CryptoHelper.decryptAes(
+                            m["ciphertext"] as String,
+                            iv,
+                            secret
+                        )
+                        ChatMessage(
+                            id = m["_id"]?.toString(),
+                            alias = alias,
+                            text = text,
+                            mine = (m["senderId"] as? String) == myId,
+                            at = at
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
             }
-            _state.update { it.copy(messages = msgs) }
+            _state.update { it.copy(messages = msgs.sortedBy { it.at }) }
         } catch (e: Exception) {
             e.printStackTrace()
             appendMessage(ChatMessage(null, "System", "⚠️ failed to load history", false, System.currentTimeMillis()))
