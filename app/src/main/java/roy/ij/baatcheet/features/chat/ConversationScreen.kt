@@ -14,10 +14,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import android.content.Context
+import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.Alignment
+import roy.ij.baatcheet.features.chat.MsgType
+import coil.compose.rememberAsyncImagePainter
 
 
 @Composable
@@ -35,15 +49,35 @@ fun ConversationScreen(viewModel: ChatViewModel) {
         if (ui.loading) Text("Loading…")
         ui.error?.let { Text("Error: $it", color = Color.Red) }
 
-        LazyColumn(Modifier.weight(1f)) {
+        val listState = rememberLazyListState()
+        LaunchedEffect(ui.messages.size) {
+            if (ui.messages.isNotEmpty()) {
+                listState.animateScrollToItem(ui.messages.lastIndex)
+            }
+        }
+        LazyColumn(Modifier.weight(1f), state = listState) {
             items(ui.messages) { m ->
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = if (m.mine) Arrangement.End else Arrangement.Start
-                ) {
-                    Text("${m.alias}: ${m.text}",
-                        Modifier.padding(8.dp).background(Color.LightGray))
+                val bubble = @Composable {
+                    when (m.type) {
+                        MsgType.TEXT -> Text(
+                            "${m.alias}: ${m.text}",
+                            Modifier
+                                .padding(4.dp)
+                                .background(Color.LightGray)
+                                .padding(8.dp)
+                                .widthIn(max = 260.dp)
+                        )
+
+                        MsgType.MEDIA -> MediaBubble(m) // 👈 handle media differently
+                    }
                 }
+
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    horizontalArrangement = if (m.mine) Arrangement.End else Arrangement.Start
+                ) { bubble() }
             }
         }
         Row(
@@ -73,5 +107,67 @@ fun ConversationScreen(viewModel: ChatViewModel) {
             }
         }
 
+    }
+}
+
+@Composable
+private fun MediaBubble(m: ChatMessage) {
+    val context = LocalContext.current
+    val isImage = m.mediaMime?.startsWith("image/") == true
+    val clickable = Modifier
+        .clip(RoundedCornerShape(10.dp))
+        .clickable(
+            enabled = m.mediaLocalPath != null,
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() }
+        ) {
+            m.mediaLocalPath?.let {
+                openFile(context, it, m.mediaMime ?: "application/octet-stream")
+            }
+        }
+
+    if (isImage && m.mediaLocalPath != null) {
+        val model: Any = if (m.mediaLocalPath.startsWith("content:"))
+            Uri.parse(m.mediaLocalPath)
+        else
+            java.io.File(m.mediaLocalPath)
+
+        androidx.compose.foundation.Image(
+            painter = coil.compose.rememberAsyncImagePainter(model),
+            contentDescription = "image",
+            modifier = clickable
+                .widthIn(max = 260.dp)
+                .heightIn(max = 260.dp)
+        )
+    } else {
+        Row(
+            clickable
+                .background(Color.LightGray)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("📎 ${m.mediaMime ?: "file"} (tap to open)")
+        }
+    }
+}
+
+private fun openFile(context: Context, path: String, mime: String) {
+    val uri: Uri = if (path.startsWith("content:")) {
+        Uri.parse(path)
+    } else {
+        val file = java.io.File(path)
+        androidx.core.content.FileProvider.getUriForFile(
+            context, "${context.packageName}.fileprovider", file
+        )
+    }
+
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, mime)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "No app to open this file type", Toast.LENGTH_SHORT).show()
     }
 }

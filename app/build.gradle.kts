@@ -145,4 +145,7 @@ dependencies {
     implementation(libs.zxing.core)
     // ZXing embedded (camera scan)
     implementation(libs.zxing.android.embedded)
+
+    //coil for image preview
+    implementation(libs.coil.compose)
 }

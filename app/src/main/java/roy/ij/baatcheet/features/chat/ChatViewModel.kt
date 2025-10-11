@@ -19,8 +19,18 @@ import roy.ij.baatcheet.data.network.UploadUrlReq
 import javax.crypto.SecretKey
 import java.time.Instant
 
+enum class MsgType { TEXT, MEDIA }
 
-data class ChatMessage(val id: String?, val alias: String, val text: String, val mine: Boolean, val at: Long)
+data class ChatMessage(
+    val id: String?,
+    val alias: String,
+    val text: String? = null,
+    val mine: Boolean,
+    val at: Long,
+    val type: MsgType = MsgType.TEXT,
+    val mediaLocalPath: String? = null,
+    val mediaMime: String? = null
+)
 
 data class ChatUiState(
     val loading: Boolean = true,
@@ -100,34 +110,72 @@ class ChatViewModel(
                             val fileUrl = msg.optString("fileUrl", "")
                             val mime = msg.optString("fileMime", "application/octet-stream")
 
-                            val fileKey = msg.optString("fileKey", "")
+                            // find my AES key
+                            val myEncKey = when {
+                                msg.has("encKey") -> msg.getString("encKey")
+                                msg.has("keyEnvelope") -> {
+                                    val envs = msg.getJSONArray("keyEnvelope")
+                                    var k: String? = null
+                                    for (i in 0 until envs.length()) {
+                                        val e = envs.getJSONObject(i)
+                                        if (e.getString("userId") == myId) {
+                                            k = e.getString("encKey"); break
+                                        }
+                                    }
+                                    k
+                                }
+                                else -> null
+                            }
+
+                            if (myEncKey == null) {
+                                appendMessage(ChatMessage(null, "System", "⚠️ no key for this media", false, System.currentTimeMillis()))
+                                return@onNewMessage
+                            }
+
+                            val secret = CryptoHelper.unwrapAesKey(myEncKey)
+                            val iv = msg.optString("iv", "")
+
                             viewModelScope.launch(Dispatchers.IO) {
                                 try {
-                                    val signed = api.getDownloadUrl("Bearer $token", fileKey)
-                                    val data = download(signed.downloadUrl)
-                                    val plain = CryptoHelper.decryptBytes(data, iv, secret)
+                                    // 1️⃣ download encrypted file directly
+                                    val encBytes = download(fileUrl)
 
-                                    val ctx = App.context
-                                    val f = java.io.File(ctx.cacheDir, "dec_${System.currentTimeMillis()}")
-                                    f.writeBytes(plain)
+                                    // 2️⃣ decrypt bytes
+                                    val plain = CryptoHelper.decryptBytes(encBytes, iv, secret)
 
+                                    // 3️⃣ determine file extension
+                                    val ext = android.webkit.MimeTypeMap.getSingleton()
+                                        .getExtensionFromMimeType(mime) ?: "bin"
+
+                                    // 4️⃣ save decrypted file to cache
+                                    val file = java.io.File(App.context.cacheDir, "bc_${System.currentTimeMillis()}.$ext")
+                                    file.outputStream().use { it.write(plain) }
+
+                                    // 5️⃣ append message with file path
                                     withContext(Dispatchers.Main) {
                                         appendMessage(
                                             ChatMessage(
-                                                null,
-                                                alias,
-                                                text = "📎 Media received ($mime)",
+                                                id = null,
+                                                alias = alias,
+                                                text = null,
                                                 mine = false,
-                                                at = System.currentTimeMillis()
+                                                at = System.currentTimeMillis(),
+                                                type = MsgType.MEDIA,
+                                                mediaLocalPath = file.absolutePath,
+                                                mediaMime = mime
                                             )
                                         )
                                     }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
-                                    appendMessage(ChatMessage(null, "System", "⚠️ media decrypt failed", false, System.currentTimeMillis()))
+                                    withContext(Dispatchers.Main) {
+                                        appendMessage(ChatMessage(null, "System", "⚠️ media decrypt failed", false, System.currentTimeMillis()))
+                                    }
                                 }
                             }
-                        } else {
+                            return@onNewMessage
+                        }
+                        else {
                             // ---------- TEXT MESSAGE ----------
                             val text = CryptoHelper.decryptAes(msg.getString("ciphertext"), iv, secret)
                             val id = msg.optString("_id", null)
@@ -218,36 +266,40 @@ class ChatViewModel(
                     val iv = (m["iv"] as? String) ?: ""
 
                     if (type == "media") {
-                        // --- handle media messages ---
                         val isMine = (m["senderId"]?.toString() == myId)
                         val fileKey = m["fileKey"]?.toString()
                         val fileUrl = m["fileUrl"]?.toString()
                         val mime = m["fileMime"]?.toString() ?: "application/octet-stream"
 
-                        if (!fileKey.isNullOrBlank()) {
-                            val signed = api.getDownloadUrl("Bearer $token", fileKey)
-                            val data = download(signed.downloadUrl)
-                            CryptoHelper.decryptBytes(data, iv, secret) // just test decryption
-                        } else if (!fileUrl.isNullOrBlank()) {
-                            val data = download(fileUrl)
-                            CryptoHelper.decryptBytes(data, iv, secret)
-                        } else {
-                            return@mapNotNull null // skip undownloadable
+                        // 1️⃣ Download encrypted bytes (prefer signed URL if available)
+                        val encBytes = when {
+                            !fileKey.isNullOrBlank() -> {
+                                val signed = api.getDownloadUrl("Bearer $token", fileKey)
+                                download(signed.downloadUrl)
+                            }
+                            !fileUrl.isNullOrBlank() -> download(fileUrl)
+                            else -> return@mapNotNull null
                         }
 
-                        val name = basenameFromKeyOrUrl(fileKey, fileUrl)
-                        val displayText = if (isMine) {
-                            // mirror the optimistic “📎 filename” you show when sending
-                            "📎 ${name ?: "Media"}"
-                        } else {
-                            "📎 Media received ($mime)"
-                        }
+                        // 2️⃣ Decrypt the bytes
+                        val plain = CryptoHelper.decryptBytes(encBytes, iv, secret)
+
+                        // 3️⃣ Determine extension & save locally
+                        val ext = android.webkit.MimeTypeMap.getSingleton()
+                            .getExtensionFromMimeType(mime) ?: "bin"
+                        val file = java.io.File(App.context.cacheDir, "hist_${System.currentTimeMillis()}.$ext")
+                        file.outputStream().use { it.write(plain) }
+
+                        // 4️⃣ Return as ChatMessage with media info
                         ChatMessage(
                             id = m["_id"]?.toString(),
                             alias = alias,
-                            text = displayText,
-                            mine = (m["senderId"] as? String) == myId,
-                            at = at
+                            text = null, // ✅ we don’t show text for media
+                            mine = isMine,
+                            at = at,
+                            type = MsgType.MEDIA,
+                            mediaLocalPath = file.absolutePath,
+                            mediaMime = mime
                         )
                     } else {
                         // --- handle text messages ---
@@ -276,7 +328,6 @@ class ChatViewModel(
         }
     }
 
-
     override fun onCleared() {
         super.onCleared()
         socket.disconnect()
@@ -290,6 +341,21 @@ class ChatViewModel(
             try {
                 val contentResolver = ctx.contentResolver
                 val mime = contentResolver.getType(uri) ?: "application/octet-stream"
+
+                withContext(Dispatchers.Main) {
+                    appendMessage(
+                        ChatMessage(
+                            id = null,
+                            alias = "Me",
+                            mine = true,
+                            at = System.currentTimeMillis(),
+                            type = MsgType.MEDIA,
+                            // Show selected file immediately using its content URI
+                            mediaLocalPath = uri.toString(),
+                            mediaMime = mime
+                        )
+                    )
+                }
 
                 // 1️⃣ get presigned URL
                 val upload = api.getUploadUrl("Bearer $token", UploadUrlReq(mime))
@@ -327,17 +393,7 @@ class ChatViewModel(
                 )
                 socket.sendMessage(payload) {}
 
-                withContext(Dispatchers.Main) {
-                    appendMessage(
-                        ChatMessage(
-                            id = null,
-                            alias = "Me",
-                            text = "📎 ${uri.lastPathSegment}",
-                            mine = true,
-                            at = System.currentTimeMillis()
-                        )
-                    )
-                }
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -367,5 +423,4 @@ class ChatViewModel(
             else -> null
         }
     }
-
 }
