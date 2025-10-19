@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import roy.ij.baatcheet.data.network.RetrofitClient
+import org.json.JSONObject
+import retrofit2.HttpException
+
 
 data class AuthState(
     val isLoading: Boolean = false,
@@ -33,7 +36,17 @@ class AuthViewModel(
                 println("inside login function")
                 // TODO save token securely (EncryptedSharedPreferences / Keystore)
             } catch (e: Exception) {
-                _state.value = AuthState(error = e.message)
+                val errorMsg = if (e is HttpException) {
+                    try {
+                        val body = e.response()?.errorBody()?.string()
+                        JSONObject(body ?: "").optString("error", "Unexpected error")
+                    } catch (_: Exception) {
+                        "Network or server error"
+                    }
+                } else {
+                    e.message ?: "Unknown error"
+                }
+                _state.value = AuthState(error = errorMsg)
             }
         }
     }
@@ -48,7 +61,17 @@ class AuthViewModel(
 
                 roy.ij.baatcheet.data.AuthSession.token = resp.token
             } catch (e: Exception) {
-                _state.value = AuthState(error = e.message)
+                val errorMsg = if (e is HttpException) {
+                    try {
+                        val body = e.response()?.errorBody()?.string()
+                        JSONObject(body ?: "").optString("error", "Unexpected error")
+                    } catch (_: Exception) {
+                        "Network or server error"
+                    }
+                } else {
+                    e.message ?: "Unknown error"
+                }
+                _state.value = AuthState(error = errorMsg)
             }
         }
     }

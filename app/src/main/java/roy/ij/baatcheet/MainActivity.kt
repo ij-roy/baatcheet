@@ -20,7 +20,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import roy.ij.baatcheet.features.auth.AuthScreen
 import roy.ij.baatcheet.features.auth.AuthViewModel
 import roy.ij.baatcheet.features.chat.ChatListScreen
 import roy.ij.baatcheet.features.chat.ChatViewModel
@@ -31,6 +30,7 @@ import roy.ij.baatcheet.features.dm.MyProfileQrScreen
 import roy.ij.baatcheet.features.dm.MyProfileQrViewModel
 import roy.ij.baatcheet.features.dm.ScanOrTypeScreen
 import roy.ij.baatcheet.navigation.NavRoutes
+import roy.ij.baatcheet.ui.screens.auth.AuthScreen
 import roy.ij.baatcheet.ui.theme.BaatCheetTheme
 
 class MainActivity : ComponentActivity() {
@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable(NavRoutes.Auth.route) {
                             // Pass the same VM to keep state across recompositions
-                            AuthScreen(viewModel = authViewModel)
+                            AuthScreen(viewModel = authViewModel, navController = navController)
                         }
                         composable(NavRoutes.ChatList.route) {
                             val token = authState.token ?: return@composable

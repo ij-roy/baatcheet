@@ -17,8 +17,8 @@ android {
         applicationId = "roy.ij.baatcheet"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "2.0.0"
+        versionCode = 6
+        versionName = "2.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -148,4 +148,10 @@ dependencies {
 
     //coil for image preview
     implementation(libs.coil.compose)
+
+    // Lottie animations
+    implementation(libs.lottie.compose)
+
+    // Accompanist navigation animation
+    implementation(libs.accompanist.navigation.animation)
 }
