@@ -2,6 +2,7 @@
 accompanistNavigationAnimation = "0.36.0"
 agp = "8.6.1"
 androidDatabaseSqlcipher = "4.5.4"
+biometric = "1.2.0-alpha05"
 coilCompose = "2.6.0"
 converterGson = "2.9.0"
 core = "4.6.2"
@@ -28,6 +29,7 @@ playServicesAuth = "21.3.0"
 firebaseFirestore = "25.1.2"
 retrofit = "2.9.0"
 roomRuntime = "2.6.1"
+securityCrypto = "1.1.0"
 socketIoClient = "2.1.0"
 ksp = "2.0.0-1.0.24"
 sqliteKtx = "2.6.1"
@@ -36,6 +38,7 @@ zxingAndroidEmbedded = "4.3.0"
 [libraries]
 accompanist-navigation-animation = { module = "com.google.accompanist:accompanist-navigation-animation", version.ref = "accompanistNavigationAnimation" }
 android-database-sqlcipher = { module = "net.zetetic:android-database-sqlcipher", version.ref = "androidDatabaseSqlcipher" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleViewmodelKtx" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
@@ -44,6 +47,7 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRuntime" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 androidx-sqlite-ktx = { module = "androidx.sqlite:sqlite-ktx", version.ref = "sqliteKtx" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }

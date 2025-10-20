@@ -154,4 +154,10 @@ dependencies {
 
     // Accompanist navigation animation
     implementation(libs.accompanist.navigation.animation)
+
+    // Encrypted shared preferences
+    implementation(libs.androidx.security.crypto)
+
+    // Biometric
+    implementation(libs.androidx.biometric)
 }

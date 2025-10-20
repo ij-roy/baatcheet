@@ -26,4 +26,5 @@ sealed class NavRoutes(val route: String) {
     }
     object MyQr : NavRoutes("myqr")
     object ScanOrType : NavRoutes("scanType")
+    object Lock : NavRoutes("lock")
 }

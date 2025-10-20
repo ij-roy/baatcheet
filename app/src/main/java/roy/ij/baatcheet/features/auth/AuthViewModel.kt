@@ -1,13 +1,14 @@
 package roy.ij.baatcheet.features.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import roy.ij.baatcheet.data.network.RetrofitClient
 import org.json.JSONObject
 import retrofit2.HttpException
+import roy.ij.baatcheet.data.network.RetrofitClient
 
 
 data class AuthState(
@@ -23,7 +24,7 @@ class AuthViewModel(
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state
 
-    fun login(username: String, password: String) {
+    fun login(ctx: Context, username: String, password: String) {
         _state.value = AuthState(isLoading = true)
         viewModelScope.launch {
             try {
@@ -31,6 +32,7 @@ class AuthViewModel(
                 _state.value = AuthState(isLoading = false)
                 println("inside login function")
                 afterAuthSuccess(resp.token)
+                onAuthSuccess(ctx, username, resp.token)
 
                 roy.ij.baatcheet.data.AuthSession.token = resp.token
                 println("inside login function")
@@ -51,13 +53,15 @@ class AuthViewModel(
         }
     }
 
-    fun register(username: String, password: String) {
+    fun register(ctx: Context, username: String, password: String) {
         _state.value = AuthState(isLoading = true)
         viewModelScope.launch {
             try {
                 val resp = repo.register(username, password)
                 _state.value = AuthState(isLoading = false)
                 afterAuthSuccess(resp.token)
+                onAuthSuccess(ctx, username, resp.token)
+
 
                 roy.ij.baatcheet.data.AuthSession.token = resp.token
             } catch (e: Exception) {
@@ -101,4 +105,13 @@ class AuthViewModel(
             }
         }
     }
+
+    fun onAuthSuccess(ctx: Context, username: String, token: String) {
+        // Save locally
+        roy.ij.baatcheet.security.SecureStore.saveUsername(ctx, username)
+
+        // Token will be stored encrypted later if user enables biometric
+        _state.value = _state.value.copy(token = token)
+    }
+
 }

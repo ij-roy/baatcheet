@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,10 @@ import kotlinx.coroutines.launch
 import roy.ij.baatcheet.features.auth.AuthViewModel
 import roy.ij.baatcheet.ui.components.FancyTextField
 import androidx.compose.ui.unit.IntOffset
+import androidx.fragment.app.FragmentActivity
+import roy.ij.baatcheet.navigation.NavRoutes
+import roy.ij.baatcheet.security.SecureStore
+import roy.ij.baatcheet.security.promptToEncryptAndStore
 import kotlin.math.roundToInt
 
 
@@ -51,6 +56,9 @@ fun AuthScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorHint by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val ctx = LocalContext.current
+    val activity = ctx as FragmentActivity
 
     val composition by rememberLottieComposition(LottieCompositionSpec.Asset("chat_intro.json"))
     val success by rememberLottieComposition(LottieCompositionSpec.Asset("success.json"))
@@ -80,13 +88,33 @@ fun AuthScreen(
             contentAlignment = Alignment.Center
         ) {
             if (state.token != null) {
-                // ✅ success animation then navigate
                 LottieAnimation(success, iterations = 1, modifier = Modifier.size(180.dp))
-                LaunchedEffect(Unit) {
+
+                LaunchedEffect(state.token) {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    delay(1200)
-                    navController.navigate("chatList") {
-                        popUpTo("auth") { inclusive = true }
+                    delay(800)
+
+                    val token = state.token!!
+                    println("🔑 Token ready, launching biometric enrollment prompt…")
+
+                    // 🧩 Always force biometric prompt after every login/register
+                    SecureStore.saveBiometricEnabled(context, false) // reset flag to re-trigger prompt
+
+                    promptToEncryptAndStore(activity, token) { success ->
+                        if (success) {
+                            println("✅ Biometric lock enabled and token securely stored.")
+                        } else {
+                            println("❌ User skipped biometric setup.")
+                            // clear any leftover blob to avoid confusion
+                            SecureStore.clearAll(context)
+                            SecureStore.saveUsername(context, username)
+                        }
+
+                        // ✅ navigate after prompt completes
+                        navController.navigate(NavRoutes.ChatList.route) {
+                            popUpTo(NavRoutes.Auth.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
                 }
             } else {
@@ -155,8 +183,8 @@ fun AuthScreen(
 
                         Button(
                             onClick = {
-                                if (isLogin) viewModel.login(username, password)
-                                else viewModel.register(username, password)
+                                if (isLogin) viewModel.login(context, username, password)
+                                else viewModel.register(context, username, password)
                             },
                             enabled = username.isNotBlank() && password.length >= 10,
                             modifier = Modifier
