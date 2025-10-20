@@ -60,7 +60,6 @@ class MainActivity : FragmentActivity() {
                 // Single shared VM for auth flow
                 val authViewModel: AuthViewModel = viewModel()
                 val authState by authViewModel.state.collectAsState()
-                
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
                     NavHost(navController, startDestination) {
                         composable(NavRoutes.Auth.route) {
