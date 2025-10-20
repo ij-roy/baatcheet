@@ -34,4 +34,6 @@ object SecureStore {
         prefs(ctx).edit().putBoolean("bio_enabled", enabled).apply()
     }
     fun isBiometricEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("bio_enabled", false)
+
+    fun clearBlob(ctx: Context) = prefs(ctx).edit().remove("token_blob").apply()
 }
