@@ -17,8 +17,8 @@ android {
         applicationId = "roy.ij.baatcheet"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "2.3.1"
+        versionCode = 8
+        versionName = "2.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -165,4 +165,8 @@ dependencies {
 
     // Biometric
     implementation(libs.androidx.biometric)
+
+    // Detect if the app is foreground
+    implementation(libs.androidx.lifecycle.process)
+
 }

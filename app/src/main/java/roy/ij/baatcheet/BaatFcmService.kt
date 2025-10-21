@@ -8,6 +8,11 @@ import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import roy.ij.baatcheet.data.AuthSession
+import roy.ij.baatcheet.App
+import roy.ij.baatcheet.util.CurrentChat
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import androidx.core.content.ContextCompat
 
 class BaatFcmService : FirebaseMessagingService() {
 
@@ -18,8 +23,13 @@ class BaatFcmService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        val data = remoteMessage.data
-        val roomId = data["roomId"] ?: return
+        val roomId = remoteMessage.data["roomId"] ?: return
+
+        // ✅ 1) If app is foreground AND the same room is open, skip notification
+        if (App.isForeground.get()) {
+            val openRoom: String? = runBlocking { CurrentChat.roomId.first() }
+            if (openRoom == roomId) return // same room open → no heads-up
+        }
 
         createChannel()
 
@@ -41,16 +51,32 @@ class BaatFcmService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setContentIntent(pending)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setGroup("room_$roomId")
             .build()
 
-        if (androidx.core.content.ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) {
-            with(NotificationManagerCompat.from(this)) {
-                notify(roomId.hashCode(), notif)
-            }
+        val hasPerm = ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.POST_NOTIFICATIONS
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (hasPerm) {
+            val nm = NotificationManagerCompat.from(this)
+
+            // Post the individual message notification (grouped by room)
+            nm.notify(roomId.hashCode(), notif)
+
+            // 🔽 Post/update the room summary so multiple messages collapse under one group
+            val summaryId = ("room_$roomId#summary").hashCode()
+            val summary = NotificationCompat.Builder(this, "messages")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("New messages")
+                .setContentText("Room $roomId")
+                .setStyle(NotificationCompat.InboxStyle()) // optional, looks nicer
+                .setGroup("room_$roomId")
+                .setGroupSummary(true)
+                .setAutoCancel(true)
+                .build()
+
+            nm.notify(summaryId, summary)
         }
     }
 
