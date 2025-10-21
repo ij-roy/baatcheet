@@ -104,4 +104,16 @@ interface ApiService {
         @Query("fileKey") fileKey: String
     ): DownloadUrlResp
 
+    @POST("users/fcm/add")
+    suspend fun addFcmToken(
+        @Header("Authorization") bearer: String,
+        @Body body: Map<String, String>
+    ): Map<String, Any>
+
+    @POST("users/fcm/remove")
+    suspend fun removeFcmToken(
+        @Header("Authorization") bearer: String,
+        @Body body: Map<String, String>
+    ): Map<String, Any>
+
 }

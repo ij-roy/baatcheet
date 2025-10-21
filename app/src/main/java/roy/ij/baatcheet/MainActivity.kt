@@ -1,5 +1,6 @@
 package roy.ij.baatcheet
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -60,6 +61,9 @@ class MainActivity : FragmentActivity() {
                 // Single shared VM for auth flow
                 val authViewModel: AuthViewModel = viewModel()
                 val authState by authViewModel.state.collectAsState()
+                // if app opened from notification
+                val startRoomId = intent?.getStringExtra("roomId")
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
                     NavHost(navController, startDestination) {
                         composable(NavRoutes.Auth.route) {
@@ -118,9 +122,21 @@ class MainActivity : FragmentActivity() {
                             LockScreen(navController = navController, viewModel = authViewModel)
                         }
                     }
+                    // 🔗 Deep-link navigation when opened from notification
+                    LaunchedEffect(authState.token, startRoomId) {
+                        if (authState.token != null && !startRoomId.isNullOrBlank()) {
+                            navController.navigate(NavRoutes.Conversation.create(startRoomId)) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent) // so Compose can read the new roomId extra
     }
 }
 

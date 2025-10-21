@@ -15,6 +15,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import roy.ij.baatcheet.navigation.NavRoutes
+import android.app.Activity
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 
 @Composable
 fun ChatListScreen(
@@ -22,6 +28,26 @@ fun ChatListScreen(
     token: String
 ) {
     val vm: ChatListViewModel = viewModel()
+
+    // 🔔 Request POST_NOTIFICATIONS permission on Android 13+
+    if (Build.VERSION.SDK_INT >= 33) {
+        val ctx = LocalContext.current as Activity
+        val granted = ContextCompat.checkSelfPermission(
+            ctx,
+            android.Manifest.permission.POST_NOTIFICATIONS
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (!granted) {
+            val launcher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { /* no-op, we just need to request once */ }
+
+            LaunchedEffect(Unit) {
+                launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     val rooms by vm.rooms.collectAsState()
     LaunchedEffect(token) { vm.load(token) }
 

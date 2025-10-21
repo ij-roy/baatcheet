@@ -33,10 +33,7 @@ class AuthViewModel(
                 println("inside login function")
                 afterAuthSuccess(resp.token)
                 onAuthSuccess(ctx, username, resp.token)
-
-                roy.ij.baatcheet.data.AuthSession.token = resp.token
-                println("inside login function")
-                // TODO save token securely (EncryptedSharedPreferences / Keystore)
+                roy.ij.baatcheet.data.AuthSession.onLogin(resp.token)
             } catch (e: Exception) {
                 val errorMsg = if (e is HttpException) {
                     try {
@@ -63,7 +60,7 @@ class AuthViewModel(
                 onAuthSuccess(ctx, username, resp.token)
 
 
-                roy.ij.baatcheet.data.AuthSession.token = resp.token
+                roy.ij.baatcheet.data.AuthSession.onLogin(resp.token)
             } catch (e: Exception) {
                 val errorMsg = if (e is HttpException) {
                     try {
