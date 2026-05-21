@@ -1,0 +1,23 @@
+# Local static-server state
+.server.pid
+
+# Verification and browser-test artifacts
+.verification/
+test-results/
+playwright-report/
+blob-report/
+
+# Optional local Node tooling cache/dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+/tools
