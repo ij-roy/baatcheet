@@ -15,3 +15,4 @@
 local.properties
 app/release/app-release.aab
 /app/release
+/app/google-services.json
