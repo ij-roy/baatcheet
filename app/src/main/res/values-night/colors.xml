@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Secure Pop palette: dark mode overrides. -->
+    <color name="baat_primary">#4E7EFF</color>
+    <color name="baat_secondary">#00E0C6</color>
+    <color name="baat_privacy">#9B7CFF</color>
+    <color name="baat_notification">#FFC857</color>
+    <color name="baat_error">#FB5577</color>
+    <color name="baat_success">#19D899</color>
+
+    <color name="baat_background">#0B1020</color>
+    <color name="baat_surface">#151B2E</color>
+    <color name="baat_text">#F8FAFC</color>
+    <color name="baat_text_secondary">#CBD5E1</color>
+    <color name="baat_outline">#334155</color>
+
+    <color name="baat_chat_mine_bubble">#4E7EFF</color>
+    <color name="baat_chat_mine_text">#FFFFFF</color>
+    <color name="baat_chat_other_bubble">#1E293B</color>
+    <color name="baat_chat_other_text">#E2E8F0</color>
+    <color name="baat_encryption_badge">#00E0C6</color>
+    <color name="baat_on_accent">#0B1020</color>
+    <color name="baat_on_primary">#FFFFFF</color>
+
+    <!-- Legacy aliases kept for any older references. -->
+    <color name="purple_200">#9B7CFF</color>
+    <color name="purple_500">#9B7CFF</color>
+    <color name="purple_700">#7C3AED</color>
+    <color name="teal_200">#00E0C6</color>
+    <color name="teal_700">#00C2A8</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

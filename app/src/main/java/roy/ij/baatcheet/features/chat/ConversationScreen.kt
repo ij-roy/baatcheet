@@ -11,11 +11,11 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import android.content.Context
 import android.content.Intent
@@ -34,6 +34,7 @@ import androidx.compose.runtime.DisposableEffect
 import roy.ij.baatcheet.util.CurrentChat
 import roy.ij.baatcheet.features.chat.MsgType
 import coil.compose.rememberAsyncImagePainter
+import roy.ij.baatcheet.ui.theme.baatCheetColors
 
 
 @Composable
@@ -52,10 +53,11 @@ fun ConversationScreen(viewModel: ChatViewModel) {
     ) { uri ->
         uri?.let { viewModel.sendMedia(it) }
     }
+    val palette = MaterialTheme.baatCheetColors
 
     Column(Modifier.fillMaxSize()) {
         if (ui.loading) Text("Loading…")
-        ui.error?.let { Text("Error: $it", color = Color.Red) }
+        ui.error?.let { Text("Error: $it", color = MaterialTheme.colorScheme.error) }
 
         val listState = rememberLazyListState()
         LaunchedEffect(ui.messages.size) {
@@ -67,14 +69,23 @@ fun ConversationScreen(viewModel: ChatViewModel) {
             items(ui.messages) { m ->
                 val bubble = @Composable {
                     when (m.type) {
-                        MsgType.TEXT -> Text(
-                            "${m.alias}: ${m.text}",
-                            Modifier
-                                .padding(4.dp)
-                                .background(Color.LightGray)
-                                .padding(8.dp)
-                                .widthIn(max = 260.dp)
-                        )
+                        MsgType.TEXT -> {
+                            val bubbleColor =
+                                if (m.mine) palette.chatMineBubble else palette.chatOtherBubble
+                            val textColor =
+                                if (m.mine) palette.chatMineText else palette.chatOtherText
+
+                            Text(
+                                "${m.alias}: ${m.text}",
+                                Modifier
+                                    .padding(4.dp)
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(bubbleColor)
+                                    .padding(8.dp)
+                                    .widthIn(max = 260.dp),
+                                color = textColor
+                            )
+                        }
 
                         MsgType.MEDIA -> MediaBubble(m) // 👈 handle media differently
                     }
@@ -121,6 +132,9 @@ fun ConversationScreen(viewModel: ChatViewModel) {
 @Composable
 private fun MediaBubble(m: ChatMessage) {
     val context = LocalContext.current
+    val palette = MaterialTheme.baatCheetColors
+    val bubbleColor = if (m.mine) palette.chatMineBubble else palette.chatOtherBubble
+    val contentColor = if (m.mine) palette.chatMineText else palette.chatOtherText
     val isImage = m.mediaMime?.startsWith("image/") == true
     val clickable = Modifier
         .clip(RoundedCornerShape(10.dp))
@@ -150,11 +164,21 @@ private fun MediaBubble(m: ChatMessage) {
     } else {
         Row(
             clickable
-                .background(Color.LightGray)
+                .background(bubbleColor)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("📎 ${m.mediaMime ?: "file"} (tap to open)")
+            Icon(
+                Icons.Default.AttachFile,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "${m.mediaMime ?: "file"} (tap to open)",
+                color = contentColor
+            )
         }
     }
 }

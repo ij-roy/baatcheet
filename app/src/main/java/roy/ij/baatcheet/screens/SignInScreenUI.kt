@@ -37,25 +37,28 @@ fun SignInScreenUI(
 ) {
     val brush = Brush.linearGradient(
         listOf(
-            Color(0xFF238CDD),
-            Color(0xFF255DCC)
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.secondary
         )
     )
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Spacer(modifier = Modifier.height(80.dp))
         Image(painter = painterResource(R.drawable.welcome_illustration), contentDescription = null, modifier = Modifier.padding(32.dp))
         Text(
             text = "BaatCheet",
             style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.ExtraBold),
-            color = Color(0xFF101010)
+            color = MaterialTheme.colorScheme.onBackground
         )
         Text(
             text = "The Chad App for Chad Guys",
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
-            color = Color(0xFF101010)
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(70.dp))
         Button(
@@ -85,7 +88,7 @@ fun SignInScreenUI(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .padding(start = 8.dp), // Space between Image and Text
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )

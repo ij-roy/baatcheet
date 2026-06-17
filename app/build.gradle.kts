@@ -17,8 +17,8 @@ android {
         applicationId = "roy.ij.baatcheet"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "2.5.1"
+        versionCode = 9
+        versionName = "2.5.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -50,17 +50,17 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"https://ij.dophera.xyz/\""
+                "\"https://ij-backend.dophera.tech/\""
             )
             buildConfigField(
                 "String",
                 "API_BASE_URL",
-                "\"https://ij.dophera.xyz/api/\""
+                "\"https://ij-backend.dophera.tech/api/\""
             )
             buildConfigField(
                 "String",
                 "SOCKET_BASE_URL",
-                "\"https://ij.dophera.xyz\""
+                "\"https://ij-backend.dophera.tech\""
             )
         }
     }
@@ -137,7 +137,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     // SQLCipher for database encryption
-    implementation(libs.android.database.sqlcipher)
+    implementation(libs.sqlcipher.android)
     implementation(libs.androidx.sqlite.ktx)
 
     implementation(libs.hilt.android)

@@ -1,33 +1,129 @@
 package roy.ij.baatcheet.ui.theme
 
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import roy.ij.baatcheet.R
 
-// Brand core
-val BluePrimary = Color(0xFF4E7EFF)
-val BlueSecondary = Color(0xFF7C4DFF)
-val Accent = Color(0xFF00D2C3)
+@Immutable
+data class BaatCheetColors(
+    val privacy: Color,
+    val notification: Color,
+    val success: Color,
+    val encryptionBadge: Color,
+    val chatMineBubble: Color,
+    val chatMineText: Color,
+    val chatOtherBubble: Color,
+    val chatOtherText: Color,
+    val textSecondary: Color
+)
 
-// Neutrals
-val BackgroundLight = Color(0xFFF7F9FC)
-val BackgroundDark = Color(0xFF0E0E12)
-val SurfaceLight = Color.White
-val SurfaceDark = Color(0xFF1E1E24)
+internal val LocalBaatCheetColors = staticCompositionLocalOf {
+    BaatCheetColors(
+        privacy = Color.Unspecified,
+        notification = Color.Unspecified,
+        success = Color.Unspecified,
+        encryptionBadge = Color.Unspecified,
+        chatMineBubble = Color.Unspecified,
+        chatMineText = Color.Unspecified,
+        chatOtherBubble = Color.Unspecified,
+        chatOtherText = Color.Unspecified,
+        textSecondary = Color.Unspecified
+    )
+}
 
+val MaterialTheme.baatCheetColors: BaatCheetColors
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalBaatCheetColors.current
 
-// Text
-val TextPrimaryLight = Color(0xFF101828)
-val TextSecondaryLight = Color(0xFF475467)
-val TextPrimaryDark = Color(0xFFF2F2F7)
-val TextSecondaryDark = Color(0xFFBDBDBD)
+@Composable
+internal fun securePopColorScheme(darkTheme: Boolean): ColorScheme {
+    val primary = colorResource(R.color.baat_primary)
+    val secondary = colorResource(R.color.baat_secondary)
+    val privacy = colorResource(R.color.baat_privacy)
+    val notification = colorResource(R.color.baat_notification)
+    val background = colorResource(R.color.baat_background)
+    val surface = colorResource(R.color.baat_surface)
+    val text = colorResource(R.color.baat_text)
+    val textSecondary = colorResource(R.color.baat_text_secondary)
+    val outline = colorResource(R.color.baat_outline)
+    val error = colorResource(R.color.baat_error)
+    val chatOtherBubble = colorResource(R.color.baat_chat_other_bubble)
+    val chatOtherText = colorResource(R.color.baat_chat_other_text)
+    val onPrimary = colorResource(R.color.baat_on_primary)
+    val onAccent = colorResource(R.color.baat_on_accent)
 
-// Alerts
-val ErrorRed = Color(0xFFE11D48)
-val SuccessGreen = Color(0xFF00B37E)
+    return if (darkTheme) {
+        darkColorScheme(
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = chatOtherBubble,
+            onPrimaryContainer = chatOtherText,
+            secondary = secondary,
+            onSecondary = onAccent,
+            secondaryContainer = secondary,
+            onSecondaryContainer = onAccent,
+            tertiary = privacy,
+            onTertiary = onPrimary,
+            tertiaryContainer = notification,
+            onTertiaryContainer = onAccent,
+            background = background,
+            onBackground = text,
+            surface = surface,
+            onSurface = text,
+            surfaceVariant = chatOtherBubble,
+            onSurfaceVariant = textSecondary,
+            outline = outline,
+            outlineVariant = outline,
+            error = error,
+            onError = onPrimary
+        )
+    } else {
+        lightColorScheme(
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = chatOtherBubble,
+            onPrimaryContainer = chatOtherText,
+            secondary = secondary,
+            onSecondary = onAccent,
+            secondaryContainer = secondary,
+            onSecondaryContainer = onAccent,
+            tertiary = privacy,
+            onTertiary = onPrimary,
+            tertiaryContainer = notification,
+            onTertiaryContainer = onAccent,
+            background = background,
+            onBackground = text,
+            surface = surface,
+            onSurface = text,
+            surfaceVariant = chatOtherBubble,
+            onSurfaceVariant = textSecondary,
+            outline = outline,
+            outlineVariant = outline,
+            error = error,
+            onError = onPrimary
+        )
+    }
+}
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+@Composable
+internal fun securePopExtraColors(): BaatCheetColors =
+    BaatCheetColors(
+        privacy = colorResource(R.color.baat_privacy),
+        notification = colorResource(R.color.baat_notification),
+        success = colorResource(R.color.baat_success),
+        encryptionBadge = colorResource(R.color.baat_encryption_badge),
+        chatMineBubble = colorResource(R.color.baat_chat_mine_bubble),
+        chatMineText = colorResource(R.color.baat_chat_mine_text),
+        chatOtherBubble = colorResource(R.color.baat_chat_other_bubble),
+        chatOtherText = colorResource(R.color.baat_chat_other_text),
+        textSecondary = colorResource(R.color.baat_text_secondary)
+    )

@@ -208,7 +208,7 @@ fun AuthScreen(
                         AnimatedVisibility(visible = state.isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.padding(top = 16.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
 

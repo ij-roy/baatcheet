@@ -4,35 +4,13 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.Color
-
-private val LightColors = lightColorScheme(
-    primary = BluePrimary,
-    secondary = BlueSecondary,
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    onPrimary = Color.White,
-    onBackground = TextPrimaryLight,
-    onSurface = TextPrimaryLight,
-    error = ErrorRed
-)
-
-private val DarkColors = darkColorScheme(
-    primary = BluePrimary,
-    secondary = BlueSecondary,
-    background = BackgroundDark,
-    surface = SurfaceDark,
-    onPrimary = Color.White,
-    onBackground = TextPrimaryDark,
-    onSurface = TextPrimaryDark,
-    error = ErrorRed
-)
 
 @Composable
 fun BaatCheetTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme =
@@ -40,12 +18,15 @@ fun BaatCheetTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         } else {
-            if (darkTheme) DarkColors else LightColors
+            securePopColorScheme(darkTheme)
         }
+    val appColors = securePopExtraColors()
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalBaatCheetColors provides appColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }
